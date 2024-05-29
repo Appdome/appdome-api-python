@@ -20,6 +20,7 @@ from status import _get_obfuscation_map_status
 from crashlytics import upload_deobfuscation_map
 
 
+
 class Platform(Enum):
     UNKNOWN = 0
     ANDROID = 1
