@@ -18,7 +18,7 @@ from utils import (validate_response, log_and_exit, add_common_args, init_common
                    init_overrides)
 from status import _get_obfuscation_map_status
 from crashlytics import upload_deobfuscation_map
-
+from datadog import upload_deobfuscation_map_datadog
 
 class Platform(Enum):
     UNKNOWN = 0
@@ -46,6 +46,9 @@ def parse_arguments():
                         help='Path to json file with sign overrides')
     parser.add_argument('-faid', '--firebase_app_id', metavar='firebase_app_id',
                         help='App ID in Firebase project (required for Crashlytics)')
+    parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key',
+                        help='Data Dog API_KEY (required for DataDog Deobfuscation)')
+
 
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
@@ -227,8 +230,12 @@ def main():
         _download_file(args.api_key, args.team_id, task_id, args.output, download)
     if _get_obfuscation_map_status(args.api_key, args.team_id, task_id):
         download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
-        if args.deobfuscation_script_output and args.firebase_app_id:
-            upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
+        if args.deobfuscation_script_output:
+            if args.firebase_app_id:
+                upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
+            elif args.datadog_app_key:
+                upload_deobfuscation_map_datadog(deobfuscation_script_output=args.deobfuscation_script_output,
+                                                 dd_api_key=args.datadog_api_key)
     if not args.auto_dev_private_signing:
         download_action(args.api_key, args.team_id, task_id, args.sign_second_output, 'sign_second_output')
     if args.certificate_output:
