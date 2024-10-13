@@ -69,9 +69,6 @@ class DataDog(CrashAnalytics):
         # Set environment variables (if needed)
         os.environ["DD_SITE"] = "datadoghq.com"
         os.environ["DD_API_KEY"] = api_key
-        # configuration = Configuration()
-        # configuration.api_key = {'apiKeyAuth': api_key}
-        # configuration.verify_ssl = False
         event_data = {
             "build_id": build_id,
             "service": service_name,
@@ -87,21 +84,12 @@ class DataDog(CrashAnalytics):
         # Use custom multipart encoder
         encoder = CustomMultipartEncoder(fields)
 
-        # multipart_data = MultipartEncoder(
-        #     fields={
-        #         "event": ("event", json.dumps(event_data), "application/json; charset=utf-8"),
-        #         "jvm_mapping_file": ("jvm_mapping", open(mapping_file_path, "rb"), "text/plain"),
-        #     }
-        # )
-
         headers = {
             "dd-evp-origin": "dd-sdk-android-gradle-plugin",
             "dd-evp-origin-version": "1.13.0",
             "dd-api-key": api_key,
             "Content-Type": encoder.content_type,
-            "Accept-Encoding": "gzip",
-            # "Content-Encoding": ""
-
+            "Accept-Encoding": "gzip"
         }
 
         # Send the POST request to Datadog
