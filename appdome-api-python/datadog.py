@@ -27,11 +27,10 @@ class DataDog(CrashAnalytics):
     def upload_deobfuscation_map(self, deobfuscation_script_output, dd_api_key):
         if not os.path.exists(deobfuscation_script_output):
             logging.warning(
-                "Missing deobfuscation script. Skipping code deobfuscation mapping file upload to Crashlytics.")
+                "Missing deobfuscation script. Skipping code deobfuscation mapping file upload to DataDog.")
             return
         if not dd_api_key:
-            logging.warning("Missing Firebase project app ID. "
-                            "Skipping code deobfuscation mapping file upload to Crashlytics.")
+            logging.warning("Missing Data Dog API key. Skipping code deobfuscation mapping file upload to DataDog.")
             return
 
         with erasedTempDir() as tmpdir:
@@ -98,5 +97,5 @@ class DataDog(CrashAnalytics):
         if response.status_code == 202:
             logging.info("Mapping file uploaded successfully!")
         else:
-            logging.info(f"Failed to upload mapping file. Status code: {response.status_code}")
+            logging.info(f"Failed to upload mapping file to DataDog. Status code: {response.status_code}")
             logging.info(f"Response: {response.text}")
