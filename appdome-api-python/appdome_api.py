@@ -17,8 +17,8 @@ from upload import upload
 from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
                    init_overrides)
 from status import _get_obfuscation_map_status
-from crashlytics import upload_deobfuscation_map
-from datadog import upload_deobfuscation_map_datadog
+from crashlytics import Crashlytics
+from datadog import DataDog
 
 class Platform(Enum):
     UNKNOWN = 0
@@ -232,9 +232,11 @@ def main():
         download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
         if args.deobfuscation_script_output:
             if args.firebase_app_id:
-                upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
-            elif args.datadog_app_key:
-                upload_deobfuscation_map_datadog(deobfuscation_script_output=args.deobfuscation_script_output,
+                crashlytics = Crashlytics()
+                crashlytics.upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
+            elif args.datadog_api_key:
+                datadog = DataDog()
+                datadog.upload_deobfuscation_map(deobfuscation_script_output=args.deobfuscation_script_output,
                                                  dd_api_key=args.datadog_api_key)
     if not args.auto_dev_private_signing:
         download_action(args.api_key, args.team_id, task_id, args.sign_second_output, 'sign_second_output')
