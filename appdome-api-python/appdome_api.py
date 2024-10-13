@@ -234,7 +234,7 @@ def main():
             if args.firebase_app_id:
                 crashlytics = Crashlytics()
                 crashlytics.upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
-            elif args.datadog_api_key:
+            if args.datadog_api_key:
                 datadog = DataDog()
                 datadog.upload_deobfuscation_map(deobfuscation_script_output=args.deobfuscation_script_output,
                                                  dd_api_key=args.datadog_api_key)
