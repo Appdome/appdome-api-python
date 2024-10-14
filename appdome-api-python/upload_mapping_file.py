@@ -1,6 +1,5 @@
 import argparse
 import logging
-import sys
 from crashlytics import Crashlytics
 from datadog import DataDog
 from utils import init_logging
@@ -14,6 +13,14 @@ def sanitize_input(file_path):
 
 
 def upload_mapping_file(deobfuscation_mapping_file, fire_base_app_id, data_dog_app_id):
+    """
+    Upload deobfuscation mapping files to either Crashlytics or DataDog, depending on the provided API keys.
+
+    :param deobfuscation_mapping_file: Path to the deobfuscation mapping file
+    :param fire_base_app_id: Firebase App ID for Crashlytics (optional)
+    :param data_dog_app_id: Datadog API key (optional)
+    :return: None
+    """
     uploaded = False  # This will track whether any upload has started
     if deobfuscation_mapping_file:
         if fire_base_app_id:
@@ -37,6 +44,11 @@ def upload_mapping_file(deobfuscation_mapping_file, fire_base_app_id, data_dog_a
 
 
 def parse_arguments():
+    """
+    Parse command-line arguments for uploading deobfuscation mapping files.
+
+    :return: Parsed arguments
+    """
     parser = argparse.ArgumentParser(description="Upload Deobfuscation Mapping Files to Datadog/Crashlytics")
     parser.add_argument('--mapping_files', '-dso', required=True, metavar='mapping_files',
                         help='deobfuscation zip file when building with "Obfuscate App Logic"')
@@ -47,6 +59,11 @@ def parse_arguments():
 
 
 def main():
+    """
+    Main function that initializes logging, parses arguments, and uploads mapping files.
+
+    :return: None
+    """
     args = parse_arguments()
     init_logging()
     args.mapping_files = sanitize_input(args.mapping_files)

@@ -7,10 +7,25 @@ from CustomMultipartEncoder import CustomMultipartEncoder
 
 
 class DataDog(CrashAnalytics):
+    """
+    DataDog service for uploading deobfuscation mapping files to DataDog.
+    """
     def __init__(self, deobfuscation_script_output, dd_api_key):
+        """
+        Initialize DataDog with the deobfuscation script output path and DataDog API key.
+
+        :param deobfuscation_script_output: Path to the deobfuscation script output file
+        :param dd_api_key: DataDog API key
+        """
         super().__init__(deobfuscation_script_output, dd_api_key)
 
     def upload_mappingfileid_file(self, tmpdir):
+        """
+        Upload the DataDog mapping file using the provided DataDog API key.
+
+        :param tmpdir: Temporary directory where files are extracted
+        :return: None
+        """
         mappingfileid_file = os.path.join(tmpdir, "data_dog_metadata.json")
 
         if not os.path.exists(mappingfileid_file):
@@ -23,6 +38,12 @@ class DataDog(CrashAnalytics):
                                           mapping_file_path=os.path.join(tmpdir, "mapping.txt"))
 
     def load_json(self, file_path):
+        """
+        Load JSON metadata from the provided file.
+
+        :param file_path: Path to the JSON metadata file
+        :return: Tuple containing build_id, service_name, and version
+        """
         with open(file_path, 'r') as file:
             data = json.load(file)
 
@@ -34,6 +55,16 @@ class DataDog(CrashAnalytics):
             return build_id, service_name, version
 
     def api_call_upload_mapping_file(self, api_key, build_id, version_name, service_name, mapping_file_path):
+        """
+        Make an API call to DataDog to upload the deobfuscation mapping file.
+
+        :param api_key: DataDog API key
+        :param build_id: Build ID from metadata
+        :param version_name: Version name from metadata
+        :param service_name: Service name from metadata
+        :param mapping_file_path: Path to the mapping.txt file
+        :return: None
+        """
         url = "https://sourcemap-intake.datadoghq.com/api/v2/srcmap"
 
         # Set environment variables (if needed)
