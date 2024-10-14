@@ -17,8 +17,8 @@ from upload import upload
 from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
                    init_overrides)
 from status import _get_obfuscation_map_status
-from crashlytics import Crashlytics
-from datadog import DataDog
+from upload_mapping_file import upload_mapping_file
+
 
 class Platform(Enum):
     UNKNOWN = 0
@@ -48,7 +48,6 @@ def parse_arguments():
                         help='App ID in Firebase project (required for Crashlytics)')
     parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key',
                         help='Data Dog API_KEY (required for DataDog Deobfuscation)')
-
 
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
@@ -133,7 +132,7 @@ def validate_args(args):
     if args.build_to_test_vendor and not any(
             args.build_to_test_vendor == vendor.value for vendor in BuildToTestVendors):
         log_and_exit(f"Vendor name provided for Build To Test isn't one of the acceptable vendors")
-    
+
     if args.google_play_signing:
         if args.signing_fingerprint_upgrade and not args.signing_fingerprint:
             log_and_exit(f"Base Google signing fingerprint is required to upgrade the fingerprint")
@@ -230,15 +229,9 @@ def main():
         _download_file(args.api_key, args.team_id, task_id, args.output, download)
     if _get_obfuscation_map_status(args.api_key, args.team_id, task_id):
         download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
-        if args.deobfuscation_script_output:
-            if args.firebase_app_id:
-                crashlytics = Crashlytics(deobfuscation_script_output=args.deobfuscation_script_output,
-                                          faid=args.firebase_app_id)
-                crashlytics.upload_deobfuscation_map()
-            if args.datadog_api_key:
-                datadog = DataDog(deobfuscation_script_output=args.deobfuscation_script_output,
-                                  dd_api_key=args.datadog_api_key)
-                datadog.upload_deobfuscation_map()
+        if args.deobfuscation_script_output and (args.datadog_api_key or args.firebase_app_id):
+            upload_mapping_file(deobfuscation_mapping_file=args.deobfuscation_script_output,
+                                fire_base_app_id=args.firebase_app_id, data_dog_app_id=args.datadog_api_key)
     if not args.auto_dev_private_signing:
         download_action(args.api_key, args.team_id, task_id, args.sign_second_output, 'sign_second_output')
     if args.certificate_output:

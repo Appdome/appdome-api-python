@@ -6,7 +6,6 @@ from crash_analytics import CrashAnalytics
 from CustomMultipartEncoder import CustomMultipartEncoder
 
 
-
 class DataDog(CrashAnalytics):
     def __init__(self, deobfuscation_script_output, dd_api_key):
         super().__init__(deobfuscation_script_output, dd_api_key)

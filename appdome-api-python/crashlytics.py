@@ -5,8 +5,8 @@ from crash_analytics import CrashAnalytics
 
 
 class Crashlytics(CrashAnalytics):
-    def __init__(self, deobfuscation_script_output, faid):
-        super().__init__(deobfuscation_script_output, faid)
+    def __init__(self, deobfuscation_script_output, firebase_app_id):
+        super().__init__(deobfuscation_script_output, firebase_app_id)
 
     def upload_mappingfileid_file(self, tmpdir):
         mappingfileid_file = os.path.join(tmpdir, "com_google_firebase_crashlytics_mappingfileid.xml")
