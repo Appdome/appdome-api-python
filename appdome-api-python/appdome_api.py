@@ -231,7 +231,7 @@ def main():
         download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
         if args.deobfuscation_script_output and (args.datadog_api_key or args.firebase_app_id):
             upload_mapping_file(deobfuscation_mapping_file=args.deobfuscation_script_output,
-                                fire_base_app_id=args.firebase_app_id, data_dog_app_id=args.datadog_api_key)
+                                fire_base_app_id=args.firebase_app_id, data_dog_api_key=args.datadog_api_key)
     if not args.auto_dev_private_signing:
         download_action(args.api_key, args.team_id, task_id, args.sign_second_output, 'sign_second_output')
     if args.certificate_output:
