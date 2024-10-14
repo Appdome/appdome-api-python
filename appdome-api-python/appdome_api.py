@@ -232,12 +232,13 @@ def main():
         download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
         if args.deobfuscation_script_output:
             if args.firebase_app_id:
-                crashlytics = Crashlytics()
-                crashlytics.upload_deobfuscation_map(args.deobfuscation_script_output, args.firebase_app_id)
+                crashlytics = Crashlytics(deobfuscation_script_output=args.deobfuscation_script_output,
+                                          faid=args.firebase_app_id)
+                crashlytics.upload_deobfuscation_map()
             if args.datadog_api_key:
-                datadog = DataDog()
-                datadog.upload_deobfuscation_map(deobfuscation_script_output=args.deobfuscation_script_output,
-                                                 dd_api_key=args.datadog_api_key)
+                datadog = DataDog(deobfuscation_script_output=args.deobfuscation_script_output,
+                                  dd_api_key=args.datadog_api_key)
+                datadog.upload_deobfuscation_map()
     if not args.auto_dev_private_signing:
         download_action(args.api_key, args.team_id, task_id, args.sign_second_output, 'sign_second_output')
     if args.certificate_output:

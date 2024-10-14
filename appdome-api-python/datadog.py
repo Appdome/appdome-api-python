@@ -1,55 +1,27 @@
-import zipfile
 import os
 import logging
-import subprocess
-import tempfile
-from contextlib import contextmanager
-from shutil import rmtree
 import json
 import requests
 from crash_analytics import CrashAnalytics
 from CustomMultipartEncoder import CustomMultipartEncoder
 
-@contextmanager
-def erasedTempDir():
-    tempDir = tempfile.mkdtemp()
-    try:
-        yield tempDir
-    except Exception as e:
-        raise e
-    finally:
-        if tempDir and os.path.exists(tempDir):
-            rmtree(tempDir, ignore_errors=True)
 
 
 class DataDog(CrashAnalytics):
+    def __init__(self, deobfuscation_script_output, dd_api_key):
+        super().__init__(deobfuscation_script_output, dd_api_key)
 
-    def upload_deobfuscation_map(self, deobfuscation_script_output, dd_api_key):
-        if not os.path.exists(deobfuscation_script_output):
-            logging.warning(
-                "Missing deobfuscation script. Skipping code deobfuscation mapping file upload to DataDog.")
+    def upload_mappingfileid_file(self, tmpdir):
+        mappingfileid_file = os.path.join(tmpdir, "data_dog_metadata.json")
+
+        if not os.path.exists(mappingfileid_file):
+            logging.warning("Missing datadog_mapping file. Skipping code deobfuscation mapping file upload to DataDog.")
             return
-        if not dd_api_key:
-            logging.warning("Missing Data Dog API key. Skipping code deobfuscation mapping file upload to DataDog.")
-            return
 
-        with erasedTempDir() as tmpdir:
-            with zipfile.ZipFile(deobfuscation_script_output, "r") as zip_file:
-                zip_file.extractall(tmpdir)
-
-            mapping_file = os.path.join(tmpdir, "mapping.txt")
-            if not os.path.exists(mapping_file):
-                logging.warning("Missing mapping.txt file. Skipping code deobfuscation mapping file upload to DataDog.")
-                return
-
-            mappingfileid_file = os.path.join(tmpdir, "data_dog_metadata.json")
-            if not os.path.exists(mappingfileid_file):
-                logging.warning("Missing datadog_mapping file."
-                                " Skipping code deobfuscation mapping file upload to DataDog.")
-                return
-            build_id, service_name, version = self.load_json(mappingfileid_file)
-            self.api_call_upload_mapping_file(api_key=dd_api_key, build_id=build_id, version_name=version,
-                                              service_name=service_name, mapping_file_path=mapping_file)
+        build_id, service_name, version = self.load_json(mappingfileid_file)
+        self.api_call_upload_mapping_file(api_key=self.faid_or_dd_api_key, build_id=build_id, version_name=version,
+                                          service_name=service_name,
+                                          mapping_file_path=os.path.join(tmpdir, "mapping.txt"))
 
     def load_json(self, file_path):
         with open(file_path, 'r') as file:
@@ -95,7 +67,7 @@ class DataDog(CrashAnalytics):
         response = requests.post(url, headers=headers, data=encoder.to_string())
 
         if response.status_code == 202:
-            logging.info("Mapping file uploaded successfully!")
+            logging.info("Mapping file uploaded successfully to Data Dog!")
         else:
             logging.info(f"Failed to upload mapping file to DataDog. Status code: {response.status_code}")
             logging.info(f"Response: {response.text}")
