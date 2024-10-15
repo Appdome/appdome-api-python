@@ -22,25 +22,22 @@ def upload_mapping_file(deobfuscation_mapping_file, fire_base_app_id, data_dog_a
     :return: None
     """
     uploaded = False  # This will track whether any upload has started
-    if deobfuscation_mapping_file:
-        if fire_base_app_id:
-            logging.info("Uploading deobfuscation mapping file to Crashlytics...")
-            crashlytics = Crashlytics(deobfuscation_script_output=deobfuscation_mapping_file,
-                                      firebase_app_id=fire_base_app_id)
-            crashlytics.upload_deobfuscation_map()
-            uploaded = True
-        if data_dog_api_key:
-            logging.info("Uploading deobfuscation mapping file to Data Dog...")
-            datadog = DataDog(deobfuscation_script_output=deobfuscation_mapping_file,
-                              dd_api_key=data_dog_api_key)
-            datadog.upload_deobfuscation_map()
-            uploaded = True
+    if fire_base_app_id:
+        logging.info("Uploading deobfuscation mapping file to Crashlytics...")
+        crashlytics = Crashlytics(deobfuscation_script_output=deobfuscation_mapping_file,
+                                  firebase_app_id=fire_base_app_id)
+        crashlytics.upload_deobfuscation_map()
+        uploaded = True
+    if data_dog_api_key:
+        logging.info("Uploading deobfuscation mapping file to Data Dog...")
+        datadog = DataDog(deobfuscation_script_output=deobfuscation_mapping_file,
+                          dd_api_key=data_dog_api_key)
+        datadog.upload_deobfuscation_map()
+        uploaded = True
 
-        if not uploaded:
-            logging.warning("Invalid arguments! You must provide the correct combination of arguments depending on "
-                            "the upload: firebase_app_id or datadog_api_key are mandatory inputs.")
-    else:
-        logging.warning("mapping_files zip is missing")
+    if not uploaded:
+        logging.warning("Invalid arguments! You must provide the correct combination of arguments depending on "
+                        "the upload: firebase_app_id or datadog_api_key are mandatory inputs.")
 
 
 def parse_arguments():

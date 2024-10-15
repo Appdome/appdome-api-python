@@ -2,9 +2,7 @@ import logging
 import zipfile
 import os
 from abc import ABC, abstractmethod
-import tempfile
-from contextlib import contextmanager
-from shutil import rmtree
+from utils import erased_temp_dir
 
 
 class CrashAnalytics(ABC):
@@ -43,7 +41,7 @@ class CrashAnalytics(ABC):
             logging.warning("Missing API key or ID. Skipping code deobfuscation mapping file upload.")
             return
         try:
-            with self.erased_temp_dir() as tmpdir:
+            with erased_temp_dir() as tmpdir:
                 with zipfile.ZipFile(self.deobfuscation_script_output, "r") as zip_file:
                     zip_file.extractall(tmpdir)
 
@@ -57,18 +55,4 @@ class CrashAnalytics(ABC):
         except Exception as e:
             logging.error(f"An error occurred during file extraction or mapping file processing: {e}")
 
-    @contextmanager
-    def erased_temp_dir(self):
-        """
-        Context manager to create and erase a temporary directory.
 
-        :yield: Temporary directory path
-        """
-        tempDir = tempfile.mkdtemp()
-        try:
-            yield tempDir
-        except Exception as e:
-            raise e
-        finally:
-            if tempDir and os.path.exists(tempDir):
-                rmtree(tempDir, ignore_errors=True)

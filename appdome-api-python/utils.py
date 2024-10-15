@@ -1,9 +1,11 @@
-
 import json
 import logging
+import os
+import tempfile
 from contextlib import contextmanager
 from os import getenv, makedirs
 from os.path import isdir, dirname, exists
+from shutil import rmtree
 from urllib.parse import urljoin
 import requests
 
@@ -16,6 +18,23 @@ ACTION_KEY = 'action'
 ANDROID_SIGNING_FINGERPRINT_KEY = 'signing_sha1_fingerprint'
 JSON_CONTENT_TYPE = 'application/json'
 APPDOME_CLIENT_HEADER = getenv('APPDOME_CLIENT_HEADER', 'Appdome-cli-python/1.0')
+
+
+@contextmanager
+def erased_temp_dir():
+    """
+    Context manager to create and erase a temporary directory.
+
+    :yield: Temporary directory path
+    """
+    tempDir = tempfile.mkdtemp()
+    try:
+        yield tempDir
+    except Exception as e:
+        raise e
+    finally:
+        if tempDir and os.path.exists(tempDir):
+            rmtree(tempDir, ignore_errors=True)
 
 
 def build_url(*args):
