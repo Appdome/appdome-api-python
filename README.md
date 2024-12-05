@@ -33,6 +33,18 @@ python3 appdome_api.py \
 --certificate_output <output certificate pdf>
 ```
 
+#### Android SDK Example:
+
+```python
+python3 appdome_api_sdk.py \
+--api_key <api key> \
+--fusion_set_id <fusion set id> \
+--team_id <team id> \
+--app <aar file> \
+--output <output aar> \
+--certificate_output <output certificate pdf>
+```
+
 #### iOS Example:
 
 ```python
@@ -47,6 +59,20 @@ python3 appdome_api.py \
 --provisioning_profiles <provisioning profile file> <another provisioning profile file if needed> \
 --entitlements <entitlements file> <another entitlements file if needed> \
 --output <output ipa> \
+--certificate_output <output certificate pdf>
+```
+
+#### iOS SDK Example:
+
+```python
+python3 appdome_api_sdk.py \
+--api_key <api key> \
+--fusion_set_id <fusion set id> \
+--team_id <team id> \
+--app <zip file> \
+--keystore <p12 file> \  # only needed for sign with Appdome
+--keystore_pass <p12 password> \ # only needed for sign with Appdome
+--output <output zip> \
 --certificate_output <output certificate pdf>
 ```
 
