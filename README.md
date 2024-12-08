@@ -70,8 +70,8 @@ python3 appdome_api_sdk.py \
 --fusion_set_id <fusion set id> \
 --team_id <team id> \
 --app <zip file> \
---keystore <p12 file> \  # only needed for sign with Appdome
---keystore_pass <p12 password> \ # only needed for sign with Appdome
+--keystore <p12 file> \  # only needed for sign on Appdome
+--keystore_pass <p12 password> \ # only needed for sign on Appdome
 --output <output zip> \
 --certificate_output <output certificate pdf>
 ```
