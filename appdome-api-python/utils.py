@@ -2,9 +2,10 @@ import json
 import logging
 import os
 import tempfile
+import zipfile
 from contextlib import contextmanager
-from os import getenv, makedirs
-from os.path import isdir, dirname, exists
+from os import getenv, makedirs, listdir
+from os.path import isdir, dirname, exists, splitext, join
 from shutil import rmtree
 from urllib.parse import urljoin
 import requests
@@ -33,7 +34,7 @@ def erased_temp_dir():
     except Exception as e:
         raise e
     finally:
-        if tempDir and os.path.exists(tempDir):
+        if tempDir and exists(tempDir):
             rmtree(tempDir, ignore_errors=True)
 
 
@@ -114,10 +115,45 @@ def init_overrides(overrides_file):
             overrides = json.load(f)
     return overrides
 
-def init_baseline_file(baseline_profile):
-    files = {}
+def init_baseline_file(baseline_profile, files):
     if baseline_profile:
-        files = {"baseline_profile": (baseline_profile, open(baseline_profile, "rb"), "application/zip")}
+        files.append(("baseline_profile", (baseline_profile, open(baseline_profile, "rb"), "application/zip")))
+
+
+def init_certs_pinning(cert_pinning_zip):
+    """
+    Extracts certificates and JSON mapping from the given zip file.
+
+    :param cert_pinning_zip: Path to the zip file containing certs and JSON mapping.
+    :return: List of files in the required format.
+    """
+    if not cert_pinning_zip or not exists(cert_pinning_zip):
+        logging.warning("No zip file provided or file does not exist.")
+        return []  # Return an empty list if no zip file is provided
+
+    files = []
+    with zipfile.ZipFile(cert_pinning_zip, 'r') as zip_ref:
+        extract_path = splitext(cert_pinning_zip)[0]  # Extract to a folder with the same name as the zip
+        zip_ref.extractall(extract_path)
+
+        # Locate the JSON file and parse it
+        json_file = next((f for f in listdir(extract_path) if f.endswith('.json')), None)
+        if not json_file:
+            logging.error("No JSON file found in the extracted zip contents.")
+            return []  # Return an empty list if no JSON file is found
+
+        with open(join(extract_path, json_file), 'r') as jf:
+            cert_mapping = json.load(jf)
+
+        # Add cert and pem files to the files list in the required format
+        for index, file_name in cert_mapping.items():
+            file_path = join(extract_path, file_name)
+            if exists(file_path):
+                files.append((
+                    f"mitm_host_server_pinned_certs_list['{index}'].value.mitm_host_server_pinned_certs_file_content",
+                    (file_name, open(file_path, 'rb'), 'application/octet-stream')
+                ))
+
     return files
 
 def run_task_action(api_key, team_id, action, task_id, overrides, files):

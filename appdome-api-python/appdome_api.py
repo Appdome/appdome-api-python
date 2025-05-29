@@ -15,7 +15,7 @@ from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
 from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
-                   init_overrides, init_baseline_file)
+                   init_overrides, init_baseline_file, init_certs_pinning)
 from status import _get_obfuscation_map_status
 from upload_mapping_file import upload_mapping_file
 
@@ -50,6 +50,8 @@ def parse_arguments():
                         help='Data Dog API_KEY (required for DataDog Deobfuscation)')
     parser.add_argument('-baseline_profile', '--baseline_profile', metavar='baseline_profile',
                         help='baseline profile file to use')
+    parser.add_argument('-cert_zip', '--cert_pinning_zip', metavar='cert_pinning_zip',
+                        help='Path to zip file containing dynamic certificates for certificate pinning')
 
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
@@ -158,9 +160,10 @@ def _upload(api_key, team_id, app_path):
 
 
 def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnostic_logs, build_to_test_vendor,
-           workflow_output_logs=None, baseline_profile=None):
+           workflow_output_logs=None, baseline_profile=None, cert_pinning_zip=None):
     build_overrides_json = init_overrides(build_overrides)
-    files = init_baseline_file(baseline_profile)
+    files = init_certs_pinning(cert_pinning_zip)
+    files = init_baseline_file(baseline_profile, files)
     if build_to_test_vendor:
         automation_vendor = init_automation_vendor(build_to_test_vendor).name
         build_response = build_to_test(api_key, team_id, app_id, fusion_set_id, automation_vendor,
@@ -233,7 +236,7 @@ def main():
     app_id = _upload(args.api_key, args.team_id, args.app) if args.app else args.app_id
 
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
-                     args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile)
+                     args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile, args.cert_pinning_zip)
 
     _context(args.api_key, args.team_id, task_id, args.workflow_output_logs)
 
