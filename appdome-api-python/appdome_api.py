@@ -163,7 +163,7 @@ def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnos
            workflow_output_logs=None, baseline_profile=None, cert_pinning_zip=None):
     build_overrides_json = init_overrides(build_overrides)
     files = init_certs_pinning(cert_pinning_zip)
-    files = init_baseline_file(baseline_profile, files)
+    init_baseline_file(baseline_profile, files)
     if build_to_test_vendor:
         automation_vendor = init_automation_vendor(build_to_test_vendor).name
         build_response = build_to_test(api_key, team_id, app_id, fusion_set_id, automation_vendor,
