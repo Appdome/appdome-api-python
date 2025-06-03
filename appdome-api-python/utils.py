@@ -127,10 +127,11 @@ def init_certs_pinning(cert_pinning_zip):
     :param cert_pinning_zip: Path to the zip file containing certs and JSON mapping.
     :return: List of files in the required format.
     """
-    if not cert_pinning_zip or not exists(cert_pinning_zip):
-        logging.warning("No zip file provided or file does not exist.")
+    if not cert_pinning_zip:
         return []  # Return an empty list if no zip file is provided
-
+    if not cert_pinning_zip.endswith('.zip') or not exists(cert_pinning_zip):
+        logging.warning("No zip file provided or file does not exist.")
+        return []  # Return an empty list if the file is not a valid zip or does not exist
     files = []
     with zipfile.ZipFile(cert_pinning_zip, 'r') as zip_ref:
         extract_path = splitext(cert_pinning_zip)[0]  # Extract to a folder with the same name as the zip
