@@ -16,6 +16,22 @@ All APIs are documented in https://apis.appdome.com/docs.
 
 ## Basic Flow Usage
 
+**Note:**
+To update certificate pinning, you need to provide a ZIP file containing the SSL certificates and a JSON mapping file.
+This ZIP file should be specified using the `--cert_pinning_zip` option in your command.
+
+Gather all of your SSL certificates and the mapping JSON file into a single ZIP archive.
+Inside the ZIP, include:
+One certificate file per host (e.g. api_cert.pem, auth_cert.pem, etc.)
+A JSON file (e.g. pinning.json) that maps each hostname to its certificate filename, for example:
+```json
+{
+  "api.example.com": "api_cert.pem",
+  "auth.example.com": "auth_cert.pem"
+}
+```
+Send us the ZIP archive. We’ll extract it and apply the certificate pinning for each host.
+## Examples
 #### Android Example:
 
 ```python
