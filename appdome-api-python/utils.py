@@ -134,7 +134,7 @@ def init_certs_pinning(cert_pinning_zip):
     files = []
     with zipfile.ZipFile(cert_pinning_zip, 'r') as zip_ref:
         extract_path = splitext(cert_pinning_zip)[0]  # Extract to a folder with the same name as the zip
-        extract_path = basename(extract_path)
+        extract_path = join(dirname(extract_path), basename(extract_path))
         zip_ref.extractall(extract_path)
 
         # Locate the JSON file and parse it
