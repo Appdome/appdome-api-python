@@ -52,7 +52,6 @@ python3 appdome_api.py \
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
 --baseline_profile <zip file for build with baseline profile>
---cert_pinning_zip <zip file containing dynamic certificates>
 ```
 
 #### Android SDK Example:
@@ -82,7 +81,6 @@ python3 appdome_api.py \
 --entitlements <entitlements file> <another entitlements file if needed> \
 --output <output ipa> \
 --certificate_output <output certificate pdf>
---cert_pinning_zip <zip file containing dynamic certificates>
 ```
 
 #### iOS SDK Example:
