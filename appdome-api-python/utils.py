@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import tempfile
 import zipfile
 from contextlib import contextmanager
@@ -133,8 +134,7 @@ def init_certs_pinning(cert_pinning_zip):
         return []  # Return an empty list if the file is not a valid zip or does not exist
     files = []
     with zipfile.ZipFile(cert_pinning_zip, 'r') as zip_ref:
-        extract_path = splitext(cert_pinning_zip)[0]  # Extract to a folder with the same name as the zip
-        extract_path = join(dirname(extract_path), basename(extract_path))
+        extract_path = splitext(cert_pinning_zip)[0] + "_unzipped"  # Extract to a folder with the same name as the zip
         zip_ref.extractall(extract_path)
 
         # Locate the JSON file and parse it
@@ -154,7 +154,7 @@ def init_certs_pinning(cert_pinning_zip):
                     f"mitm_host_server_pinned_certs_list['{index}'].value.mitm_host_server_pinned_certs_file_content",
                     (file_name, open(file_path, 'rb'), 'application/octet-stream')
                 ))
-
+    os.rmdir(extract_path)
     return files
 
 def run_task_action(api_key, team_id, action, task_id, overrides, files):
