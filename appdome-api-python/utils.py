@@ -1,11 +1,10 @@
 import json
 import logging
-import os
 import tempfile
 import zipfile
 from contextlib import contextmanager
 from os import getenv, makedirs, listdir
-from os.path import isdir, dirname, exists, splitext, join
+from os.path import isdir, dirname, exists, splitext, join, basename
 from shutil import rmtree
 from urllib.parse import urljoin
 import requests
@@ -135,6 +134,7 @@ def init_certs_pinning(cert_pinning_zip):
     files = []
     with zipfile.ZipFile(cert_pinning_zip, 'r') as zip_ref:
         extract_path = splitext(cert_pinning_zip)[0]  # Extract to a folder with the same name as the zip
+        extract_path = basename(extract_path)
         zip_ref.extractall(extract_path)
 
         # Locate the JSON file and parse it
