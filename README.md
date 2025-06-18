@@ -82,18 +82,23 @@ python3 appdome_api_sdk.py \
 --certificate_output <output certificate pdf>
 ```
 
-#### update certificate pinning:
-To update certificate pinning, you need to provide a ZIP file containing the SSL certificates and a JSON mapping file.
-This ZIP file should be specified using the `--cert_pinning_zip` option in your command.
+# Update Certificate Pinning
+To update certificate pinning, you need to bundle your certificates and mapping file into a ZIP archive and pass it to your build command.
+## What to include
+- **Certificate files** (one per host), in any of these formats:  
+  - `.cer`  
+  - `.crt`  
+  - `.pem`  
+  - `.der`  
+  - `.zip`  
+- **JSON mapping file** (e.g. `pinning.json`), with entries like:
+  ```json
+  {
+    "api.example.com": "api_cert.pem",
+    "auth.example.com": "auth_cert.crt"
+  }
+## How to run
+Gather all certificate files and pinning.json into a single certs_bundle.zip.
+Invoke your build with:
 
-Gather all of your SSL certificates and the mapping JSON file into a single ZIP archive.
-Inside the ZIP, include:
-One certificate file per host (e.g. api_cert.pem, auth_cert.pem, etc.)
-A JSON file (e.g. pinning.json) that maps each hostname to its certificate filename, for example:
-```json
-{
-  "api.example.com": "api_cert.pem",
-  "auth.example.com": "auth_cert.pem"
-}
-```
-Send us the ZIP archive. We’ll extract it and apply the certificate pinning for each host.
+your-build-command --cert_pinning_zip=/path/to/certs_bundle.zip
