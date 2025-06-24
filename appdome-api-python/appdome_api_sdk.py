@@ -27,7 +27,8 @@ def parse_arguments():
     upload_group.add_argument('--app_id', metavar='app_id_value', help='sdk id of previously uploaded sdk')
 
     add_common_args(parser)
-
+    parser.add_argument('--direct_upload', action='store_true',
+                        help="Upload sdk directly to Appdome, and not through aws pre-signed url")
     parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
                         help='Appdome Fusion Set id. '
                              'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
@@ -99,7 +100,7 @@ def _sign(args, platform, task_id, workflow_output_logs=None):
 def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
-    app_id = _upload(args.api_key, args.team_id, args.app) if args.app else args.app_id
+    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload) if args.app else args.app_id
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
                      None, args.workflow_output_logs)
     _sign(args, platform, task_id, args.workflow_output_logs)
