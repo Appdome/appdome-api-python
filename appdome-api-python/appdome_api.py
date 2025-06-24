@@ -9,6 +9,7 @@ from build import build
 from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
 from context import context
+from direct_upload import direct_upload
 from download import download, download_action
 from private_sign import private_sign_android, private_sign_ios
 from sign import sign_android, sign_ios
@@ -33,7 +34,7 @@ def parse_arguments():
     upload_group.add_argument('--app_id', metavar='app_id_value', help='App id of previously uploaded app')
 
     add_common_args(parser)
-
+    parser.add_argument('--direct_upload', action='store_true', help="Upload app directly to Appdome, and not through aws pre-signed url")
     parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
                         help='Appdome Fusion Set id. '
                              'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
@@ -152,7 +153,8 @@ def validate_args(args):
     return platform, fusion_set_id
 
 
-def _upload(api_key, team_id, app_path):
+def _upload(api_key, team_id, app_path, direct_upload_param=False):
+    upload_func = direct_upload if direct_upload_param else upload
     upload_response = upload(api_key, team_id, app_path)
     validate_response(upload_response)
     logging.info(f"Upload done. App-id: {upload_response.json()['id']}")
@@ -233,7 +235,7 @@ def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
 
-    app_id = _upload(args.api_key, args.team_id, args.app) if args.app else args.app_id
+    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload) if args.app else args.app_id
 
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
                      args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile, args.cert_pinning_zip)
