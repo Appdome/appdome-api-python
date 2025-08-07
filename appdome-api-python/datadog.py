@@ -65,11 +65,12 @@ class DataDog(CrashAnalytics):
         :param mapping_file_path: Path to the mapping.txt file
         :return: None
         """
-        url = "https://sourcemap-intake.datadoghq.com/api/v2/srcmap"
 
         # Set environment variables (if needed)
-        os.environ["DD_SITE"] = "datadoghq.com"
-        os.environ["DD_API_KEY"] = api_key
+        os.environ["DD_SITE"] = os.environ.get("DD_SITE", "datadoghq.com")
+        os.environ["DD_API_KEY"] = os.environ.get("DD_API_KEY", api_key)
+        url = f"https://sourcemap-intake.{os.environ.get('DD_SITE')}/api/v2/srcmap"
+
         event_data = {
             "build_id": build_id,
             "service": service_name,
