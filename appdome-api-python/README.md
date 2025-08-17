@@ -32,6 +32,12 @@ python3 appdome_api.py --app <apk/aab file>
 --deobfuscation_script_output <file path for downloading deobfuscation zip file>
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
+--baseline_profile <zip file for build with baseline profile>
+--cert_pinning_zip <zip file containing dynamic certificates>
+--new_bundle_id <new bundle id>
+--new_version <new app version>
+--new_build_num <new app build number>
+--new_display_name <new app display name>
 ```
 
 ## iOS whole process
@@ -43,6 +49,11 @@ python3 appdome_api.py --app <ipa file>
 --provisioning_profiles <provisioning profile file> <another provisioning profile file if needed>
 --entitlements <entitlements file> <another entitlements file if needed> --output <output ipa>
 --certificate_output <output certificate pdf>
+--cert_pinning_zip <zip file containing dynamic certificates>
+--new_bundle_id <new bundle id>
+--new_version <new app version>
+--new_build_num <new app build number>
+--new_display_name <new app display name>
 ```
 
 Private Signing and Auto-Dev Private Signing can also be invoked in the whole process commands
