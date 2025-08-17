@@ -187,6 +187,11 @@ def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnos
 def _context(api_key, team_id, task_id, workflow_output_logs=None, new_bundle_id=None, new_version=None,
              new_build_num=None, new_display_name=None, app_icon=None, icon_overlay=None):
     context_response = context(api_key, team_id, task_id, new_bundle_id, new_version, new_build_num, new_display_name, app_icon, icon_overlay)
+    validate_response(context_response)
+    logging.info(f"Context request started. Response: {context_response.json()}")
+    wait_for_status_complete(api_key, team_id, task_id, operation="context",
+                             workflow_output_logs_path=workflow_output_logs)
+    logging.info(f"Context request finished.")
 
 
 def _sign(args, platform, task_id, sign_overrides, workflow_output_logs=None):
