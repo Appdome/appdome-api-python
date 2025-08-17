@@ -8,7 +8,7 @@ from auto_dev_sign import auto_dev_sign_android, auto_dev_sign_ios
 from build import build
 from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
-from context import context
+from context import context, add_context_args
 from direct_upload import direct_upload
 from download import download, download_action
 from private_sign import private_sign_android, private_sign_ios
@@ -54,6 +54,7 @@ def parse_arguments():
     parser.add_argument('-cert_zip', '--cert_pinning_zip', metavar='cert_pinning_zip',
                         help='Path to zip file containing dynamic certificates for certificate pinning')
 
+    add_context_args(parser)
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
     sign_group.add_argument('-ps', '--private_signing', action='store_true', help='Sign application manually')
@@ -183,8 +184,9 @@ def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnos
     return task_id
 
 
-def _context(api_key, team_id, task_id, workflow_output_logs=None):
-    context_response = context(api_key, team_id, task_id)
+def _context(api_key, team_id, task_id, workflow_output_logs=None, new_bundle_id=None, new_version=None,
+             new_build_num=None, new_display_name=None, app_icon=None, icon_overlay=None):
+    context_response = context(api_key, team_id, task_id, new_bundle_id, new_version, new_build_num, new_display_name, app_icon, icon_overlay)
     validate_response(context_response)
     logging.info(f"Context request started. Response: {context_response.json()}")
     wait_for_status_complete(api_key, team_id, task_id, operation="context",
@@ -240,7 +242,8 @@ def main():
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
                      args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile, args.cert_pinning_zip)
 
-    _context(args.api_key, args.team_id, task_id, args.workflow_output_logs)
+    _context(args.api_key, args.team_id, task_id, args.workflow_output_logs, args.new_bundle_id, args.new_version,
+             args.new_build_num, args.new_display_name, args.app_icon, args.icon_overlay)
 
     _sign(args, platform, task_id, args.sign_overrides, args.workflow_output_logs)
 
