@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from utils import run_task_action, cleaned_fd_list, validate_response, add_common_args, init_common_args, TASK_ID_KEY
+from utils import run_task_action, cleaned_fd_list, validate_response, add_common_args, init_common_args
 
 
 def context(api_key, team_id, task_id, new_bundle_id=None, new_version=None,
@@ -18,6 +18,7 @@ def context(api_key, team_id, task_id, new_bundle_id=None, new_version=None,
         overrides['app_customization_pack_bundle_display_name'] = new_display_name
     if context_overrides:
         overrides.update(context_overrides)
+
     files = {}
     with cleaned_fd_list() as open_fd:
         if app_icon_path:
@@ -38,7 +39,7 @@ def parse_arguments():
     add_common_args(parser, add_task_id=True)
     add_context_args(parser)
     return parser.parse_args()
-
+            
 def add_context_args(parser):
     parser.add_argument('--new_bundle_id', metavar='bundle_id_value', help='Change App identifier')
     parser.add_argument('--new_version', metavar='version_value', help='Change App version')
@@ -55,7 +56,7 @@ def main():
     r = context(args.api_key, args.team_id, args.task_id, args.new_bundle_id, args.new_version, args.new_build_num,
                 args.new_display_name, args.app_icon, args.icon_overlay)
     validate_response(r)
-    logging.info(f"Context for Build id: {r.json()[TASK_ID_KEY]} started")
+    logging.info(f"Context for Build id: {r.json()['task_id']} started")
 
 
 if __name__ == '__main__':
