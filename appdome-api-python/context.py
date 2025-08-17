@@ -37,13 +37,16 @@ def context(api_key, team_id, task_id, new_bundle_id=None, new_version=None,
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Initialize Context on Appdome')
     add_common_args(parser, add_task_id=True)
+    add_context_args(parser)
+    return parser.parse_args()
+            
+def add_context_args(parser):
     parser.add_argument('--new_bundle_id', metavar='bundle_id_value', help='Change App identifier')
     parser.add_argument('--new_version', metavar='version_value', help='Change App version')
     parser.add_argument('--new_build_num', metavar='bundle_value', help='Change App build number')
     parser.add_argument('--new_display_name', metavar='display_name_value', help='Change App display name')
     parser.add_argument('--app_icon', metavar='icon_file', help='Path to new App icon file')
     parser.add_argument('--icon_overlay', metavar='icon_file', help='Path to App overlay icon file')
-    return parser.parse_args()
 
 
 def main():
