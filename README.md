@@ -37,6 +37,10 @@ python3 appdome_api.py \
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
 --baseline_profile <zip file for build with baseline profile>
+--new_bundle_id <new bundle id>
+--new_version <new app version>
+--new_build_num <new app build number>
+--new_display_name <new app display name>
 ```
 
 #### Android SDK Example:
@@ -66,6 +70,10 @@ python3 appdome_api.py \
 --entitlements <entitlements file> <another entitlements file if needed> \
 --output <output ipa> \
 --certificate_output <output certificate pdf>
+--new_bundle_id <new bundle id>
+--new_version <new app version>
+--new_build_num <new app build number>
+--new_display_name <new app display name>
 ```
 
 #### iOS SDK Example:
