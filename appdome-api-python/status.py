@@ -48,11 +48,16 @@ def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_
                     last_date = None
                     messages = False
                 status_response = status(api_key, team_id, task_id, url, last_date, messages)
-                break  # Exit retry loop on success
+
+                # Validate HTTP status code is 200 or 204
+                if status_response.status_code in [200, 204]:
+                    break  # Exit retry loop on success
+                else:
+                    # Continue retrying if status code is not valid
+                    sleep(interval_sec)
             except Exception as e:
                 if i == num_of_retries - 1:
                     raise Exception(f'Wait for status Error. Error: {e}')
-                logging.debug(f'Wait for status Error. Error: {e}')
                 sleep(interval_sec)
 
         validate_response(status_response)
