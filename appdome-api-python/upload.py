@@ -45,8 +45,10 @@ def upload(api_key, team_id, file_path):
 
     logging.info(f"Uploading file id {file_id}")
     aws_put_response = put_file_in_aws(file_path, aws_url)
+    logging.info(f"Upload status: uploading to our cloud")
     validate_response(aws_put_response)
     app = upload_using_link(api_key, team_id, file_id, basename(file_path))
+    logging.info(f"Upload status: analyzing and saving file info on our servers")
     validate_response(app)
     app_id = app.json()['id']
     wait_for_status_complete(api_key, team_id, app_id, url=UPLOAD_URL, operation="upload")
