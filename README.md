@@ -7,12 +7,15 @@ Each API endpoint has its own file and `main` function for a single API call.
 
 All APIs are documented in https://apis.appdome.com/docs.
 
-**Note:** The examples below are using the `requests` library. You can install it with `pip3 install requests`.
-
 ---
 **For detailed information about each step and more advanced use, please refer to the [detailed usage examples](./appdome-api-python/README.md)**
 
 ---
+
+## Requirements
+- Python **3.6 or later**
+- `requests` library **>= 2.26.0`
+
 
 ## Basic Flow Usage
 
