@@ -102,6 +102,17 @@ python3 sign.py --task_id <task id value>
 --sign_overrides <overrides json file>
 ```
 
+**Android (with signing fingerprint list)**
+```
+python3 sign.py --task_id <task id value>
+--keystore <keystore file>
+--keystore_pass <keystore password>
+--keystore_alias <key alias>
+--key_pass <key password>
+--signing_fingerprint_list <path_to_json_file>
+--sign_overrides <overrides json file>
+```
+
 **iOS**
 
 ```
@@ -125,6 +136,13 @@ python3 private_sign.py --task_id <task id value>
 --google_play_signing
 ```
 
+**Android (with signing fingerprint list)**
+```
+python3 private_sign.py --task_id <task id value>
+--signing_fingerprint_list <path_to_json_file>
+--sign_overrides <overrides json file>
+```
+
 **iOS**
 
 ```
@@ -143,6 +161,12 @@ python3 private_sign.py --task_id <task id value>
 python3 auto_dev_sign.py --task_id <task id value>
 --signing_fingerprint <signing fingerprint>
 --google_play_signing
+```
+
+**Android (with signing fingerprint list)**
+```
+python3 auto_dev_sign.py --task_id <task id value>
+--signing_fingerprint_list <path_to_json_file>
 ```
 
 **iOS**

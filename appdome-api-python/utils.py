@@ -1,12 +1,11 @@
 import json
 import logging
-import os
 import shutil
 import tempfile
 import zipfile
 from contextlib import contextmanager
 from os import getenv, makedirs, listdir
-from os.path import isdir, dirname, exists, splitext, join, basename
+from os.path import isdir, dirname, exists, splitext, join
 from shutil import rmtree
 from urllib.parse import urljoin
 import requests
@@ -17,6 +16,7 @@ API_KEY_ENV = 'APPDOME_API_KEY'
 TEAM_ID_ENV = 'APPDOME_TEAM_ID'
 OVERRIDES_KEY = 'overrides'
 ACTION_KEY = 'action'
+TASK_ID_KEY = 'task_id'
 ANDROID_SIGNING_FINGERPRINT_KEY = 'signing_sha1_fingerprint'
 JSON_CONTENT_TYPE = 'application/json'
 APPDOME_CLIENT_HEADER = getenv('APPDOME_CLIENT_HEADER', 'Appdome-cli-python/1.0')
@@ -91,6 +91,41 @@ def add_google_play_signing_fingerprint(google_play_signing_fingerprint, overrid
         if google_play_signing_fingerprint_upgrade:
             overrides['signing_keystore_google_signing_upgrade'] = True
             overrides['signing_keystore_google_signing_sha1_key_2nd_cert'] = google_play_signing_fingerprint_upgrade
+
+
+def add_trusted_signing_fingerprint_list(trusted_signing_fingerprint_list_file, overrides):
+    """
+    Reads a JSON file containing trusted signing fingerprint list and adds it to overrides.
+
+    :param trusted_signing_fingerprint_list_file: Path to JSON file with fingerprint list
+    :param overrides: Dictionary to add the fingerprint list to
+    """
+    if trusted_signing_fingerprint_list_file:
+        if not exists(trusted_signing_fingerprint_list_file):
+            log_and_exit(f"Trusted signing fingerprint list file not found: {trusted_signing_fingerprint_list_file}")
+        with open(trusted_signing_fingerprint_list_file, 'r') as f:
+            fingerprint_list = json.load(f)
+        # Ensure each fingerprint entry has TrustedStoreSigning field
+        for fingerprint in fingerprint_list:
+            if 'TrustedStoreSigning' not in fingerprint:
+                fingerprint['TrustedStoreSigning'] = False
+        overrides['trusted_signing_fingerprint_list'] = fingerprint_list
+
+
+def validate_trusted_fingerprint_list_args(args):
+    """
+    Validates that trusted_signing_fingerprint_list is not used with Google Play signing parameters.
+    """
+    if hasattr(args, 'signing_fingerprint_list') and args.signing_fingerprint_list:
+        conflicting_params = []
+        if hasattr(args, 'signing_fingerprint') and args.signing_fingerprint:
+            conflicting_params.append('--signing_fingerprint')
+        if hasattr(args, 'signing_fingerprint_upgrade') and args.signing_fingerprint_upgrade:
+            conflicting_params.append('--signing_fingerprint_upgrade')
+        if hasattr(args, 'google_play_signing') and args.google_play_signing:
+            conflicting_params.append('--google_play_signing')
+        if conflicting_params:
+            log_and_exit(f"--trusted_signing_fingerprint_list cannot be used with: {', '.join(conflicting_params)}")
 
 
 def add_provisioning_profiles_entitlements(provisioning_profiles_paths, entitlements_paths, files_list, overrides,
@@ -244,3 +279,84 @@ def validate_output_path(path):
     if path_dir and not exists(path_dir):
         logging.info(f"Creating non-existent output directory [{path_dir}]")
         makedirs(path_dir)
+
+
+def add_signing_credentials_args(parser, required=False, add_platform_extra_signing_params=True):
+    parser.add_argument('-k', '--keystore', metavar='keystore_file',
+                        help='Path to keystore file to use on Appdome iOS and Android signing.', required=required)
+    parser.add_argument('-kp', '--keystore_pass', metavar='keystore_password',
+                        help='Password for keystore to use on Appdome iOS and Android signing.', required=required)
+    parser.add_argument('-kyp', '--key_pass', metavar='key_password', help='Password for the key to use on Appdome Android signing.',)
+    group = parser.add_mutually_exclusive_group(required=required)
+    group.add_argument('-ka', '--keystore_alias', metavar='key_alias', help='Key alias to use on Appdome Android signing.')
+    add_provisioning_profiles_arg(group)
+    add_common_private_signing_args(parser, add_platform_extra_signing_params=add_platform_extra_signing_params)
+    if add_platform_extra_signing_params:
+        add_signing_fingerprint_arg(parser)
+
+
+def add_private_signing_args(parser, add_entitlements=False):
+    group = parser.add_mutually_exclusive_group(required=True)
+    add_provisioning_profiles_arg(group)
+    add_signing_fingerprint_arg(group)
+    add_trusted_signing_fingerprint_list_arg(group)
+    add_common_private_signing_args(parser, add_entitlements=add_entitlements, add_trusted_fingerprint_list=False)
+
+
+def add_common_private_signing_args(parser, add_platform_extra_signing_params=True, add_entitlements=True, add_trusted_fingerprint_list=True):
+    if add_platform_extra_signing_params:
+        parser.add_argument('-cfu', '--signing_fingerprint_upgrade', metavar='signing_fingerprint_upgrade', help='SHA-1 or SHA-256 Google Play upgrade App Signing certificate fingerprint.')
+        parser.add_argument('-gp', '--google_play_signing', action='store_true', help='This Android application will be distributed via the Google Play App Signing program.')
+        parser.add_argument('-sv', '--sign_overrides', metavar='overrides_json_file', help='Path to json file with sign overrides')
+        if add_trusted_fingerprint_list:
+            add_trusted_signing_fingerprint_list_arg(parser)
+    if add_entitlements:
+        parser.add_argument('-entt', '--entitlements', nargs='+', metavar='entitlements_plist_path', help='Path to iOS entitlements plist to use. Can be multiple entitlements files')
+
+
+def add_provisioning_profiles_arg(target):
+    target.add_argument('-pr', '--provisioning_profiles', nargs='+', metavar='provisioning_profile_file', help='Path to iOS provisioning profiles files to use. Can be multiple profiles')
+
+
+def add_signing_fingerprint_arg(target):
+    target.add_argument('-cf', '--signing_fingerprint', metavar='signing_fingerprint', help='SHA-1 or SHA-256 final Android signing certificate fingerprint.')
+
+
+def add_trusted_signing_fingerprint_list_arg(parser):
+    parser.add_argument('-sfp', '--signing_fingerprint_list', metavar='trusted_fingerprint_list_json_file',
+                        help='Path to JSON file containing trusted signing fingerprint list. Cannot be used with --signing_fingerprint, --signing_fingerprint_upgrade, or --google_play_signing.')
+
+
+def android_keystore(args):
+    return args.keystore or getenv('ANDROID_KEYSTORE')
+
+def android_keystore_pass(args):
+    return args.keystore_pass or getenv('ANDROID_KEYSTORE_PASS')
+
+def android_keystore_alias(args):
+    return args.keystore_alias or getenv('ANDROID_KEYSTORE_ALIAS')
+
+def android_key_pass(args):
+    return args.key_pass or getenv('ANDROID_KEY_PASS')
+
+def ios_p12(args):
+    return args.keystore or getenv('IOS_P12')
+
+def ios_p12_password(args):
+    return args.keystore_pass or getenv('IOS_P12_PASSWORD')
+
+def ios_provisioning_profiles(args):
+    return args.provisioning_profiles or provisioning_profiles_from_env()
+
+def provisioning_profiles_from_env():
+    profiles = []
+    idx = 1
+    while True:
+        val = getenv(f'IOS_MOBILEPROVISION_{idx}')
+        if not val:
+            break
+        profiles.append(val)
+        idx += 1
+    if not profiles and getenv('IOS_MOBILEPROVISION'):
+        profiles.append(getenv('IOS_MOBILEPROVISION'))
+    return profiles

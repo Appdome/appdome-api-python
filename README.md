@@ -40,6 +40,8 @@ python3 appdome_api.py \
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
 --baseline_profile <zip file for build with baseline profile>
+--cert_pinning_zip <zip file containing dynamic certificates>
+--signing_fingerprint_list <path_to_json_file> \
 --new_bundle_id <new bundle id>
 --new_version <new app version>
 --new_build_num <new app build number>
@@ -73,6 +75,7 @@ python3 appdome_api.py \
 --entitlements <entitlements file> <another entitlements file if needed> \
 --output <output ipa> \
 --certificate_output <output certificate pdf>
+--cert_pinning_zip <zip file containing dynamic certificates>
 --new_bundle_id <new bundle id>
 --new_version <new app version>
 --new_build_num <new app build number>
@@ -92,6 +95,45 @@ python3 appdome_api_sdk.py \
 --output <output zip> \
 --certificate_output <output certificate pdf>
 ```
+
+## Signing Fingerprint List
+
+The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list of trusted signing fingerprints for Android signing. This is useful when you need to support multiple signing certificates.
+
+**Usage:**
+```bash
+--signing_fingerprint_list <path_to_json_file>
+```
+
+**JSON File Format:**
+The JSON file should contain an array of fingerprint objects. Each object must include:
+- `SHA`: The SHA-1 or SHA-256 certificate fingerprint (required)
+
+**Example JSON file (`fingerprints.json`):**
+```json
+[
+  {
+    "SHA": "E71186B4D94016F0A3F2A68DF5BC75D27CA307663C6DFDE5923084486D43150E",
+    "TrustedStoreSigning": false
+  },
+  {
+    "SHA": "857444B499AAABF7DF388DEA89CC2DA0258273B7C1B091866FA1267E8AA3495D",
+    "TrustedStoreSigning": true
+  },
+  {
+    "SHA": "C11E39F29C946A6408E5C5EA65D94FCB05C0DB302B43E6A8ABCB01256257442A",
+    "TrustedStoreSigning": true
+  }
+]
+```
+
+**Important Notes:**
+- The `--signing_fingerprint_list` option cannot be used together with:
+  - `--signing_fingerprint` (`-cf`)
+  - `--signing_fingerprint_upgrade` (`-cfu`)
+  - `--google_play_signing` (`-gp`)
+- This option is available for Android signing operations.
+
 
 # Update Certificate Pinning
 To update certificate pinning, you need to bundle your certificates and mapping file into a ZIP archive and pass it to your build command.
