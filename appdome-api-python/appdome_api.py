@@ -37,6 +37,7 @@ def parse_arguments():
     upload_group.add_argument('--app_id', metavar='app_id_value', help='App id of previously uploaded app')
 
     add_common_args(parser)
+
     parser.add_argument('--direct_upload', action='store_true', help="Upload app directly to Appdome, and not through aws pre-signed url")
     parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
                         help='Appdome Fusion Set id. '
@@ -46,8 +47,6 @@ def parse_arguments():
                         help='Path to json file with build overrides')
     parser.add_argument('-bl', '--diagnostic_logs', action='store_true',
                         help="Build the app with Appdome's Diagnostic Logs (if licensed)")
-    parser.add_argument('-sv', '--sign_overrides', metavar='overrides_json_file',
-                        help='Path to json file with sign overrides')
     parser.add_argument('-faid', '--firebase_app_id', metavar='firebase_app_id',
                         help='App ID in Firebase project (required for Crashlytics)')
     parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key',
@@ -58,6 +57,7 @@ def parse_arguments():
                         help='Path to zip file containing dynamic certificates for certificate pinning')
 
     add_context_args(parser)
+
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
     sign_group.add_argument('-ps', '--private_signing', action='store_true', help='Sign application manually')
