@@ -96,9 +96,9 @@ python3 appdome_api_sdk.py \
 --certificate_output <output certificate pdf>
 ```
 
-## Signing Fingerprint List
+## Signing Fingerprint List (Android only)
 
-The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list of trusted signing fingerprints for Android signing. This is useful when you need to support multiple signing certificates.
+The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list of signing fingerprints for Android signing. This is useful when you need to support multiple signing certificates.
 
 **Usage:**
 ```bash
