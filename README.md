@@ -108,6 +108,7 @@ The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list
 **JSON File Format:**
 The JSON file should contain an array of fingerprint objects. Each object must include:
 - `SHA`: The SHA-1 or SHA-256 certificate fingerprint (required)
+- `TrustedStoreSigning`: true/false Indicates whether the certificate fingerprint is used for store submissions (e.g., Google Play). (Optional; defaults to false)
 
 **Example JSON file (`fingerprints.json`):**
 ```json
