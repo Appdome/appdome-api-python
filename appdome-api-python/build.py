@@ -5,7 +5,7 @@ import logging
 import requests
 
 from utils import (request_headers, empty_files, validate_response, debug_log_request, TASKS_URL,
-                   ACTION_KEY, OVERRIDES_KEY, add_common_args, init_common_args, init_overrides, team_params)
+                   ACTION_KEY, OVERRIDES_KEY, add_common_args, init_common_args, init_overrides, team_params, TASK_ID_KEY)
 
 
 def create_build_request(api_key, team_id, app_id, fusion_set_id, overrides=None, use_diagnostic_logs=False):
@@ -49,7 +49,7 @@ def main():
 
     r = build(args.api_key, args.team_id, args.app_id, args.fusion_set_id, overrides, args.diagnostic_logs)
     validate_response(r)
-    logging.info(f"Build started: Build id: {r.json()['task_id']}")
+    logging.info(f"Build started: Build id: {r.json()[TASK_ID_KEY]}")
 
 
 if __name__ == '__main__':

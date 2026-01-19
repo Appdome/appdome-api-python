@@ -11,7 +11,7 @@ from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
 from download import download
 from utils import (log_and_exit, add_common_args, init_common_args, validate_output_path,
-                   validate_response)
+                   validate_response, ios_p12, ios_p12_password)
 
 
 class Platform(Enum):
@@ -27,8 +27,8 @@ def parse_arguments():
     upload_group.add_argument('--app_id', metavar='app_id_value', help='sdk id of previously uploaded sdk')
 
     add_common_args(parser)
-    parser.add_argument('--direct_upload', action='store_true',
-                        help="Upload sdk directly to Appdome, and not through aws pre-signed url")
+
+    parser.add_argument('--direct_upload', action='store_true', help="Upload sdk directly to Appdome, and not through aws pre-signed url")
     parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
                         help='Appdome Fusion Set id. '
                              'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
@@ -76,9 +76,9 @@ def validate_args(args):
     validate_output_path(args.certificate_output)
     validate_output_path(args.certificate_json)
     if platform == Platform.IOS:
-        if (args.keystore is None) ^ (args.keystore_pass is None):  # XOR operator to check if only one is None
+        if (ios_p12(args) is None) ^ (ios_p12_password(args) is None):  # XOR operator to check if only one is None
             log_and_exit("keystore and keystore_pass must be specified")
-        elif args.keystore is None and args.keystore_pass is None:
+        elif ios_p12(args) is None and ios_p12_password(args) is None:
             logging.info("Keystore and keystore_pass weren't supplied. Will continue with private sign.")
     return platform, fusion_set_id
 
@@ -86,7 +86,7 @@ def validate_args(args):
 def _sign(args, platform, task_id, workflow_output_logs=None):
     if platform == Platform.IOS:
         if args.keystore:
-            r = sign_ios(args.api_key, args.team_id, task_id, args.keystore, args.keystore_pass,
+            r = sign_ios(args.api_key, args.team_id, task_id, ios_p12(args), ios_p12_password(args),
                          provisioning_profiles_paths=[])
         else:
             r = private_sign_ios(args.api_key, args.team_id, task_id, provisioning_profiles_paths=[])

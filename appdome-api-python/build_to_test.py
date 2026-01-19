@@ -6,7 +6,7 @@ from enum import Enum
 import requests
 
 from utils import (request_headers, empty_files, validate_response, debug_log_request, BUILD_TO_TEST_URL, log_and_exit,
-                   ACTION_KEY, OVERRIDES_KEY, add_common_args, init_common_args, init_overrides, team_params)
+                   ACTION_KEY, OVERRIDES_KEY, add_common_args, init_common_args, init_overrides, team_params, TASK_ID_KEY)
 
 
 class BuildToTestVendors(Enum):
@@ -88,7 +88,7 @@ def main():
     r = build_to_test(args.api_key, args.team_id, args.app_id, args.fusion_set_id, automation_vendor.name,
                       automation_vendor_err_msg, overrides, args.diagnostic_logs)
     validate_response(r)
-    logging.info(f"Build_to_test started: Build id: {r.json()['task_id']}")
+    logging.info(f"Build_to_test started: Build id: {r.json()[TASK_ID_KEY]}")
 
 
 if __name__ == '__main__':

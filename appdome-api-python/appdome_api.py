@@ -3,6 +3,7 @@ import logging
 from enum import Enum
 from os import getenv
 from os.path import splitext
+
 from build_to_test import BuildToTestVendors, build_to_test, init_automation_vendor
 from auto_dev_sign import auto_dev_sign_android, auto_dev_sign_ios
 from build import build
@@ -16,7 +17,9 @@ from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
 from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
-                   init_overrides, init_baseline_file, init_certs_pinning)
+                   init_overrides, init_baseline_file, init_certs_pinning, add_signing_credentials_args, TASK_ID_KEY,
+                   android_keystore, android_keystore_pass, android_keystore_alias, android_key_pass, ios_p12, ios_p12_password,
+                   ios_provisioning_profiles, validate_trusted_fingerprint_list_args)
 from status import _get_obfuscation_map_status
 from upload_mapping_file import upload_mapping_file
 
@@ -34,6 +37,7 @@ def parse_arguments():
     upload_group.add_argument('--app_id', metavar='app_id_value', help='App id of previously uploaded app')
 
     add_common_args(parser)
+
     parser.add_argument('--direct_upload', action='store_true', help="Upload app directly to Appdome, and not through aws pre-signed url")
     parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
                         help='Appdome Fusion Set id. '
@@ -43,8 +47,6 @@ def parse_arguments():
                         help='Path to json file with build overrides')
     parser.add_argument('-bl', '--diagnostic_logs', action='store_true',
                         help="Build the app with Appdome's Diagnostic Logs (if licensed)")
-    parser.add_argument('-sv', '--sign_overrides', metavar='overrides_json_file',
-                        help='Path to json file with sign overrides')
     parser.add_argument('-faid', '--firebase_app_id', metavar='firebase_app_id',
                         help='App ID in Firebase project (required for Crashlytics)')
     parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key',
@@ -55,32 +57,14 @@ def parse_arguments():
                         help='Path to zip file containing dynamic certificates for certificate pinning')
 
     add_context_args(parser)
+
     sign_group = parser.add_mutually_exclusive_group(required=True)
     sign_group.add_argument('-s', '--sign_on_appdome', action='store_true', help='Sign on Appdome')
     sign_group.add_argument('-ps', '--private_signing', action='store_true', help='Sign application manually')
     sign_group.add_argument('-adps', '--auto_dev_private_signing', action='store_true',
                             help='Use a pre-generated signing script for automated local signing')
 
-    # Signing credentials
-    parser.add_argument('-k', '--keystore', metavar='keystore_file',
-                        help='Path to keystore file to use on Appdome iOS and Android signing.')
-    parser.add_argument('-kp', '--keystore_pass', metavar='keystore_password',
-                        help='Password for keystore to use on Appdome iOS and Android signing..')
-    parser.add_argument('-ka', '--keystore_alias', metavar='key_alias',
-                        help='Key alias to use on Appdome Android signing.')
-    parser.add_argument('-kyp', '--key_pass', metavar='key_password',
-                        help='Password for the key to use on Appdome Android signing.')
-    parser.add_argument('-cf', '--signing_fingerprint', metavar='signing_fingerprint',
-                        help='SHA-1 or SHA-256 final Android signing certificate fingerprint.')
-    parser.add_argument('-cfu', '--signing_fingerprint_upgrade', metavar='signing_fingerprint_upgrade',
-                        help='SHA-1 or SHA-256 Upgraded signing certificate fingerprint for Google Play App Signing.')
-    parser.add_argument('-gp', '--google_play_signing', action='store_true',
-                        help='This Android application will be distributed via the Google Play App Signing program.')
-    parser.add_argument('-pr', '--provisioning_profiles', nargs='+', metavar='provisioning_profile_file',
-                        help='Path to iOS provisioning profiles files to use. Can be multiple profiles')
-    parser.add_argument('-entt', '--entitlements', nargs='+', metavar='entitlements_plist_path',
-                        help='Path to iOS entitlements plist to use. Can be multiple entitlements files')
-
+    add_signing_credentials_args(parser)
     # Output parameters
     parser.add_argument('-o', '--output', metavar='output_app_file',
                         help='Output file for fused and signed app after Appdome')
@@ -126,23 +110,27 @@ def validate_args(args):
             log_and_exit(f"fusion_set_id must be specified or set though the correct platform environment variable")
 
     if args.private_signing or args.auto_dev_private_signing:
-        if platform == Platform.ANDROID and not args.signing_fingerprint:
-            log_and_exit(f"signing_fingerprint must be specified when using any Android local signing")
+        if platform == Platform.ANDROID and not args.signing_fingerprint and not args.signing_fingerprint_list:
+            log_and_exit(f"signing_fingerprint or signing_fingerprint_list must be specified when using any Android local signing")
 
-    if platform == Platform.IOS and not args.provisioning_profiles:
+    if platform == Platform.IOS and not ios_provisioning_profiles(args):
         log_and_exit(f"provisioning_profiles must be specified when using any iOS signing")
 
     if args.sign_on_appdome:
-        if not args.keystore or not args.keystore_pass:
-            log_and_exit(f"keystore and keystore_pass must be specified when using on Appdome signing")
-        if platform == Platform.ANDROID and (not args.keystore_alias or not args.key_pass):
-            log_and_exit(f"keystore_alias and key_pass must be specified when using on Appdome Android signing")
+        if platform == Platform.IOS:
+            if not all([ios_p12(args), ios_p12_password(args)]):
+                log_and_exit(f"All ios signing credentials(keystore, keystore_pass) must be specified when using on Appdome signing")
+        if platform == Platform.ANDROID:
+            if not all([android_keystore(args), android_keystore_pass(args), android_keystore_alias(args), android_key_pass(args)]):
+                log_and_exit(f"All android signing credentials(keystore, keystore_pass, keystore_alias, key_pass) must be specified when using on Appdome signing")
         if args.google_play_signing and not args.signing_fingerprint:
             log_and_exit(f"Google signing fingerprint requires providing a signing fingerprint")
 
     if args.build_to_test_vendor and not any(
             args.build_to_test_vendor == vendor.value for vendor in BuildToTestVendors):
         log_and_exit(f"Vendor name provided for Build To Test isn't one of the acceptable vendors")
+
+    validate_trusted_fingerprint_list_args(args)
 
     if args.google_play_signing:
         if args.signing_fingerprint_upgrade and not args.signing_fingerprint:
@@ -156,7 +144,7 @@ def validate_args(args):
 
 def _upload(api_key, team_id, app_path, direct_upload_param=False):
     upload_func = direct_upload if direct_upload_param else upload
-    upload_response = upload(api_key, team_id, app_path)
+    upload_response = upload_func(api_key, team_id, app_path)
     validate_response(upload_response)
     logging.info(f"Upload done. App-id: {upload_response.json()['id']}")
     return upload_response.json()['id']
@@ -177,7 +165,7 @@ def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnos
                                files=files)
     validate_response(build_response)
     logging.info(f"Build request started. Response: {build_response.json()}")
-    task_id = build_response.json()['task_id']
+    task_id = build_response.json()[TASK_ID_KEY]
     wait_for_status_complete(api_key, team_id, task_id, operation="build",
                              workflow_output_logs_path=workflow_output_logs)
     logging.info(f"Build request finished.")
@@ -198,24 +186,27 @@ def _sign(args, platform, task_id, sign_overrides, workflow_output_logs=None):
     sign_overrides_json = init_overrides(sign_overrides)
     if platform == Platform.ANDROID:
         if args.sign_on_appdome:
-            r = sign_android(args.api_key, args.team_id, task_id, args.keystore, args.keystore_pass,
-                             args.keystore_alias, args.key_pass,
+            r = sign_android(args.api_key, args.team_id, task_id, android_keystore(args), android_keystore_pass(args),
+                             android_keystore_alias(args), android_key_pass(args),
                              args.signing_fingerprint if args.google_play_signing else None, sign_overrides_json,
-                             args.signing_fingerprint_upgrade if args.google_play_signing else None)
+                             args.signing_fingerprint_upgrade if args.google_play_signing else None,
+                             args.signing_fingerprint_list)
         elif args.private_signing:
             r = private_sign_android(args.api_key, args.team_id, task_id, args.signing_fingerprint,
-                                     args.google_play_signing, sign_overrides_json, args.signing_fingerprint_upgrade)
+                                     args.google_play_signing, sign_overrides_json, args.signing_fingerprint_upgrade,
+                                     args.signing_fingerprint_list)
         else:
             r = auto_dev_sign_android(args.api_key, args.team_id, task_id, args.signing_fingerprint,
-                                      args.google_play_signing, sign_overrides_json, args.signing_fingerprint_upgrade)
+                                      args.google_play_signing, sign_overrides_json, args.signing_fingerprint_upgrade,
+                                      args.signing_fingerprint_list)
     else:
         if args.sign_on_appdome:
-            r = sign_ios(args.api_key, args.team_id, task_id, args.keystore, args.keystore_pass,
-                         args.provisioning_profiles, args.entitlements, sign_overrides_json)
+            r = sign_ios(args.api_key, args.team_id, task_id, ios_p12(args), ios_p12_password(args),
+                         ios_provisioning_profiles(args), args.entitlements, sign_overrides_json)
         elif args.private_signing:
-            r = private_sign_ios(args.api_key, args.team_id, task_id, args.provisioning_profiles, sign_overrides_json)
+            r = private_sign_ios(args.api_key, args.team_id, task_id, ios_provisioning_profiles(args), sign_overrides_json)
         else:
-            r = auto_dev_sign_ios(args.api_key, args.team_id, task_id, args.provisioning_profiles, args.entitlements,
+            r = auto_dev_sign_ios(args.api_key, args.team_id, task_id, ios_provisioning_profiles(args), args.entitlements,
                                   sign_overrides_json)
 
     validate_response(r)
