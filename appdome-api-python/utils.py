@@ -125,7 +125,7 @@ def validate_trusted_fingerprint_list_args(args):
         if hasattr(args, 'google_play_signing') and args.google_play_signing:
             conflicting_params.append('--google_play_signing')
         if conflicting_params:
-            log_and_exit(f"--trusted_signing_fingerprint_list cannot be used with: {', '.join(conflicting_params)}")
+            log_and_exit(f"--signing_fingerprint_list cannot be used with: {', '.join(conflicting_params)}")
 
 
 def add_provisioning_profiles_entitlements(provisioning_profiles_paths, entitlements_paths, files_list, overrides,
