@@ -323,7 +323,7 @@ def add_signing_fingerprint_arg(target):
 
 
 def add_trusted_signing_fingerprint_list_arg(parser):
-    parser.add_argument('-sfp', '--signing_fingerprint_list', metavar='trusted_fingerprint_list_json_file',
+    parser.add_argument('-sfp', '--signing_fingerprint_list', metavar='signing_fingerprint_list_json_file',
                         help='Path to JSON file containing trusted signing fingerprint list. Cannot be used with --signing_fingerprint, --signing_fingerprint_upgrade, or --google_play_signing.')
 
 

@@ -65,7 +65,7 @@ def main():
     if args.keystore_alias:
         r = sign_android(args.api_key, args.team_id, args.task_id, android_keystore(args), android_keystore_pass(args),
                          android_keystore_alias(args), android_key_pass(args), args.signing_fingerprint, overrides,
-                         args.signing_fingerprint_upgrade, args.trusted_signing_fingerprint_list)
+                         args.signing_fingerprint_upgrade, args.signing_fingerprint_list)
     else:
         r = sign_ios(args.api_key, args.team_id, args.task_id, ios_p12(args), ios_p12_password(args),
                      ios_provisioning_profiles(args), args.entitlements, overrides)
