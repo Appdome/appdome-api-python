@@ -34,7 +34,7 @@ python3 appdome_api.py \
 --keystore_alias <key alias> \
 --key_pass <key password> \
 --output <output apk/aab> \
---build_to_test_vendor <bitbar,saucelabs,browserstack,lambdatest,perfecto,firebase,aws_device_farm> \
+--build_to_test_vendor <bitbar,saucelabs,browserstack,lambdatest,perfecto,firebase,aws_device_farm,app_debug,app_profiler> \
 --certificate_output <output certificate pdf>
 --deobfuscation_script_output <file path for downloading deobfuscation zip file>
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
