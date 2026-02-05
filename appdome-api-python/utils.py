@@ -19,6 +19,7 @@ ACTION_KEY = 'action'
 TASK_ID_KEY = 'task_id'
 ANDROID_SIGNING_FINGERPRINT_KEY = 'signing_sha1_fingerprint'
 JSON_CONTENT_TYPE = 'application/json'
+SIGNING_FINGERPRINT_LIST_ENV = 'SIGNING_FINGERPRINT_LIST'
 APPDOME_CLIENT_HEADER = getenv('APPDOME_CLIENT_HEADER', 'Appdome-cli-python/1.0')
 
 
@@ -93,22 +94,46 @@ def add_google_play_signing_fingerprint(google_play_signing_fingerprint, overrid
             overrides['signing_keystore_google_signing_sha1_key_2nd_cert'] = google_play_signing_fingerprint_upgrade
 
 
-def add_trusted_signing_fingerprint_list(trusted_signing_fingerprint_list_file, overrides):
-    """
-    Reads a JSON file containing trusted signing fingerprint list and adds it to overrides.
+def _normalize_fingerprint_list(fingerprint_list):
+    """Validates and normalizes parsed list (type + TrustedStoreSigning). Exits on error."""
+    if not isinstance(fingerprint_list, list):
+        log_and_exit(f"Trusted signing fingerprint list must be a JSON array, got {type(fingerprint_list).__name__}")
+    for fingerprint in fingerprint_list:
+        if 'TrustedStoreSigning' not in fingerprint:
+            fingerprint['TrustedStoreSigning'] = False
+    return fingerprint_list
 
-    :param trusted_signing_fingerprint_list_file: Path to JSON file with fingerprint list
+
+def resolve_signing_fingerprint_list(args):
+    """
+    Resolves args.signing_fingerprint_list (from CLI or default env). Value can be a file path or JSON content.
+    Call once after parse_args(); overwrites args.signing_fingerprint_list with normalized list or None.
+    """
+    raw = args.signing_fingerprint_list
+    if exists(raw): # file path
+        try:
+            with open(raw, 'r') as f:
+                fingerprint_list = json.load(f)
+        except json.JSONDecodeError as e:
+            log_and_exit(f"Trusted signing fingerprint list file {raw} contains invalid JSON: {e}")
+    else:
+        try: # JSON content
+            fingerprint_list = json.loads(raw)
+        except json.JSONDecodeError as e:
+            log_and_exit(f"Trusted signing fingerprint list from {SIGNING_FINGERPRINT_LIST_ENV} is invalid JSON: {e}")
+    args.signing_fingerprint_list = _normalize_fingerprint_list(fingerprint_list)
+    if not args.signing_fingerprint_list:
+        log_and_exit("Trusted signing fingerprint list cannot be empty")
+
+
+def add_trusted_signing_fingerprint_list(fingerprint_list, overrides):
+    """
+    Adds an already-resolved trusted signing fingerprint list to overrides.
+
+    :param fingerprint_list: List of fingerprint dicts (e.g. args.signing_fingerprint_list after resolve), or None to skip
     :param overrides: Dictionary to add the fingerprint list to
     """
-    if trusted_signing_fingerprint_list_file:
-        if not exists(trusted_signing_fingerprint_list_file):
-            log_and_exit(f"Trusted signing fingerprint list file not found: {trusted_signing_fingerprint_list_file}")
-        with open(trusted_signing_fingerprint_list_file, 'r') as f:
-            fingerprint_list = json.load(f)
-        # Ensure each fingerprint entry has TrustedStoreSigning field
-        for fingerprint in fingerprint_list:
-            if 'TrustedStoreSigning' not in fingerprint:
-                fingerprint['TrustedStoreSigning'] = False
+    if fingerprint_list is not None:
         overrides['trusted_signing_fingerprint_list'] = fingerprint_list
 
 
@@ -116,7 +141,7 @@ def validate_trusted_fingerprint_list_args(args):
     """
     Validates that trusted_signing_fingerprint_list is not used with Google Play signing parameters.
     """
-    if hasattr(args, 'signing_fingerprint_list') and args.signing_fingerprint_list:
+    if getattr(args, 'signing_fingerprint_list', None):
         conflicting_params = []
         if hasattr(args, 'signing_fingerprint') and args.signing_fingerprint:
             conflicting_params.append('--signing_fingerprint')
@@ -125,7 +150,7 @@ def validate_trusted_fingerprint_list_args(args):
         if hasattr(args, 'google_play_signing') and args.google_play_signing:
             conflicting_params.append('--google_play_signing')
         if conflicting_params:
-            log_and_exit(f"--signing_fingerprint_list cannot be used with: {', '.join(conflicting_params)}")
+            log_and_exit(f"--trusted_signing_fingerprint_list cannot be used with: {', '.join(conflicting_params)}")
 
 
 def add_provisioning_profiles_entitlements(provisioning_profiles_paths, entitlements_paths, files_list, overrides,
@@ -268,6 +293,8 @@ def init_common_args(args):
     if not args.api_key:
         log_and_exit(f"api_key must be specified or set though the '{API_KEY_ENV}' environment variable")
     init_logging(args.verbose)
+    if getattr(args, 'signing_fingerprint_list', None):
+        resolve_signing_fingerprint_list(args)
 
 
 def validate_output_path(path):
@@ -323,8 +350,9 @@ def add_signing_fingerprint_arg(target):
 
 
 def add_trusted_signing_fingerprint_list_arg(parser):
-    parser.add_argument('-sfp', '--signing_fingerprint_list', metavar='signing_fingerprint_list_json_file',
-                        help='Path to JSON file containing trusted signing fingerprint list. Cannot be used with --signing_fingerprint, --signing_fingerprint_upgrade, or --google_play_signing.')
+    parser.add_argument('-sfp', '--signing_fingerprint_list', metavar='trusted_fingerprint_list_json_file',
+                        default=getenv(SIGNING_FINGERPRINT_LIST_ENV),
+                        help=f'Path to JSON file or JSON content. Default is env var {SIGNING_FINGERPRINT_LIST_ENV}. CLI takes precedence. Cannot be used with --signing_fingerprint, --signing_fingerprint_upgrade, or --google_play_signing.')
 
 
 def android_keystore(args):
