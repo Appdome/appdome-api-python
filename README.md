@@ -25,8 +25,8 @@ All APIs are documented in https://apis.appdome.com/docs.
 ```python
 python3 appdome_api.py \
 --api_key <api key> \
---fusion_set_id <fusion set id> \
---team_id <team id> \
+--fusion_set_id <fusion-set-id> \
+--team_id <team-id> \
 --app <apk/aab file> \
 --sign_on_appdome \
 --keystore <keystore file> \
@@ -35,8 +35,11 @@ python3 appdome_api.py \
 --key_pass <key password> \
 --output <output apk/aab> \
 --build_to_test_vendor <bitbar,saucelabs,browserstack,lambdatest,perfecto,firebase,aws_device_farm,app_debug,app_profiler> \
---certificate_output <output certificate pdf>
---deobfuscation_script_output <file path for downloading deobfuscation zip file>
+--certificate_output <output certificate pdf> \
+--deobfuscation_script_output <file path for downloading deobfuscation zip file> \
+--build_overrides <json_file_path> \
+--context_overrides <json_file_path> \
+--sign_overrides <json_file_path>
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
 --baseline_profile <zip file for build with baseline profile>
@@ -54,11 +57,12 @@ python3 appdome_api.py \
 ```python
 python3 appdome_api_sdk.py \
 --api_key <api key> \
---fusion_set_id <fusion set id> \
---team_id <team id> \
---app <aar file> \
+--fusion_set_id <fusion-set-id> \
+--team_id <team-id> \
+--app <aar> \
 --output <output aar> \
---certificate_output <output certificate pdf>
+--certificate_output <output certificate pdf> \
+--build_overrides <json_file_path> 
 ```
 
 #### iOS Example:
@@ -66,8 +70,8 @@ python3 appdome_api_sdk.py \
 ```python
 python3 appdome_api.py \
 --api_key <api key> \
---fusion_set_id <fusion set id> \
---team_id <team id> \
+--fusion_set_id <fusion-set-id> \
+--team_id <team-id> \
 --app <ipa file> \
 --sign_on_appdome \
 --keystore <p12 file> \
@@ -75,7 +79,10 @@ python3 appdome_api.py \
 --provisioning_profiles <provisioning profile file> <another provisioning profile file if needed> \
 --entitlements <entitlements file> <another entitlements file if needed> \
 --output <output ipa> \
---certificate_output <output certificate pdf>
+--certificate_output <output certificate pdf> \
+--build_overrides <json_file_path> \
+--context_overrides <json_file_path> \
+--sign_overrides <json_file_path>
 --cert_pinning_zip <zip file containing dynamic certificates>
 --new_bundle_id <new bundle id>
 --new_version <new app version>
@@ -94,14 +101,21 @@ python3 appdome_api_sdk.py \
 --keystore <p12 file> \  # only needed for sign on Appdome
 --keystore_pass <p12 password> \ # only needed for sign on Appdome
 --output <output zip> \
---certificate_output <output certificate pdf>
+--certificate_output <output certificate pdf> \
+--build_overrides <json_file_path> 
 ```
 
 ## Signing Fingerprint List (Android only)
 
-The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list of signing fingerprints for Android signing. This is useful when you need to support multiple signing certificates.
+The `--signing_fingerprint_list` option allows you to specify a list of trusted signing fingerprints for Android applications. This is useful when you need to trust multiple signing certificates.
 
-**Usage:**
+**Important Notes:**
+- This option is **only valid for Android applications** (APK/AAB files)
+- It is **mutually exclusive** with `--google_play_signing`, `--signing_fingerprint`, and `--signing_fingerprint_upgrade`
+- You cannot use `--signing_fingerprint_list` together with any of the other signing fingerprint options
+
+### Usage
+
 ```bash
 --signing_fingerprint_list <path_to_json_file>
 ```
@@ -109,7 +123,7 @@ The `--signing_fingerprint_list` (or `-sfp`) option allows you to specify a list
 **JSON File Format:**
 The JSON file should contain an array of fingerprint objects. Each object must include:
 - `SHA`: The SHA-1 or SHA-256 certificate fingerprint (required)
-- `TrustedStoreSigning`: true/false. Indicates whether the certificate fingerprint is for the store-managed signing key (e.g., Google Play App Signing)
+- `TrustedStoreSigning`: true/false Indicates whether the certificate fingerprint is used for store submissions (e.g., Google Play). (Optional; defaults to false)
 
 **Example JSON file (`fingerprints.json`):**
 ```json
@@ -129,12 +143,8 @@ The JSON file should contain an array of fingerprint objects. Each object must i
 ]
 ```
 
-**Important Notes:**
-- The `--signing_fingerprint_list` option cannot be used together with:
-  - `--signing_fingerprint` (`-cf`)
-  - `--signing_fingerprint_upgrade` (`-cfu`)
-  - `--google_play_signing` (`-gp`)
-- This option is available for Android signing operations.
+**Fields:**
+- `SHA`: The SHA-1 or SHA-256 fingerprint of the signing certificate (required)
 
 
 # Update Certificate Pinning
