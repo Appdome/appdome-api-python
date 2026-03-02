@@ -16,7 +16,7 @@ from private_sign import private_sign_android, private_sign_ios
 from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
-from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
+from utils import (init_input_mapping, validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
                    init_overrides, init_baseline_file, init_certs_pinning, add_signing_credentials_args, TASK_ID_KEY,
                    android_keystore, android_keystore_pass, android_keystore_alias, android_key_pass, ios_p12, ios_p12_password,
                    ios_provisioning_profiles, validate_trusted_fingerprint_list_args)
@@ -53,6 +53,8 @@ def parse_arguments():
                         help='Data Dog API_KEY (required for DataDog Deobfuscation)')
     parser.add_argument('-baseline_profile', '--baseline_profile', metavar='baseline_profile',
                         help='baseline profile file to use')
+    parser.add_argument('-input_mapping', '--input_mapping', metavar='input_mapping',
+                        help='input obfuscation/minimization mapping file to use')
     parser.add_argument('-cert_zip', '--cert_pinning_zip', metavar='cert_pinning_zip',
                         help='Path to zip file containing dynamic certificates for certificate pinning')
 
@@ -151,10 +153,11 @@ def _upload(api_key, team_id, app_path, direct_upload_param=False):
 
 
 def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnostic_logs, build_to_test_vendor,
-           workflow_output_logs=None, baseline_profile=None, cert_pinning_zip=None):
+           workflow_output_logs=None, baseline_profile=None, cert_pinning_zip=None, input_mapping=None):
     build_overrides_json = init_overrides(build_overrides)
     files = init_certs_pinning(cert_pinning_zip)
     init_baseline_file(baseline_profile, files)
+    init_input_mapping(input_mapping, files)
     if build_to_test_vendor:
         automation_vendor = init_automation_vendor(build_to_test_vendor).name
         build_response = build_to_test(api_key, team_id, app_id, fusion_set_id, automation_vendor,
@@ -231,7 +234,8 @@ def main():
     app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload) if args.app else args.app_id
 
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
-                     args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile, args.cert_pinning_zip)
+                     args.build_to_test_vendor, args.workflow_output_logs, args.baseline_profile, args.cert_pinning_zip,
+                     args.input_mapping)
 
     _context(args.api_key, args.team_id, task_id, args.workflow_output_logs, args.new_bundle_id, args.new_version,
              args.new_build_num, args.new_display_name, args.app_icon, args.icon_overlay)

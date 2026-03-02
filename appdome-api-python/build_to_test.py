@@ -18,14 +18,14 @@ class BuildToTestVendors(Enum):
     AUTOMATION_FIREBASE = 'firebase'
     AUTOMATION_KATALON = 'katalon'
     AUTOMATION_KOBITON = 'kobiton'
-    AUTOMATION_TOSCA = 'tosca'
+    AUTOMATION_TOSCA = 'tricentis_device_cloud'
     AUTOMATION_AWS_DEVICE_FARM = 'aws_device_farm'
     AUTOMATION_APP_DEBUG = 'app_debug'
     AUTOMATION_APP_PROFILER = 'app_profiler'
 
 
 build_to_test_default_message = "App is not running on {}. Exiting"
-
+REPRO_OVERRIDE = 'repro_override'
 
 def create_build_to_test_request(api_key, team_id, app_id, fusion_set_id, vendor,
                                  automation_vendor_err_msg=None, overrides=None, use_diagnostic_logs=False):
@@ -51,10 +51,15 @@ def create_build_to_test_request(api_key, team_id, app_id, fusion_set_id, vendor
 
 
 def build_to_test(api_key, team_id, app_id, fusion_set_id, vendor,
-                  automation_vendor_err_msg=None, overrides=None, use_diagnostic_logs=False, files=None):
+                  automation_vendor_err_msg=None, overrides=None, use_diagnostic_logs=False, files=None,
+                  repro_override=None):
     url, headers, body, params = create_build_to_test_request(api_key, team_id, app_id, fusion_set_id,
                                                               vendor, automation_vendor_err_msg, overrides,
                                                               use_diagnostic_logs)
+    if files:
+        files.update({REPRO_OVERRIDE:open(repro_override, 'rb')}) if repro_override else None
+    else:
+        files = {REPRO_OVERRIDE: open(repro_override, 'rb')} if repro_override else None
     debug_log_request(url, headers=headers, params=params, data=body)
     return requests.post(url, headers=headers, params=params, data=body, files=files if files else empty_files())
 

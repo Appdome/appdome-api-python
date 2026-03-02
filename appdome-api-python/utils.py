@@ -180,6 +180,9 @@ def init_baseline_file(baseline_profile, files):
     if baseline_profile:
         files.append(("baseline_profile", (baseline_profile, open(baseline_profile, "rb"), "application/zip")))
 
+def init_input_mapping(input_mapping, files):
+    if input_mapping:
+        files.append(("input_mapping", (input_mapping, open(input_mapping, "rb"), "application/txt")))
 
 def init_certs_pinning(cert_pinning_zip):
     """

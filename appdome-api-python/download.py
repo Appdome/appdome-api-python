@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from utils import (validate_response, add_common_args, init_common_args, validate_output_path, task_output_command)
+from status import _get_obfuscation_map_status
 
 
 def download(api_key, team_id, task_id, action=None):
@@ -35,7 +36,8 @@ def main():
     args = parse_arguments()
     init_common_args(args)
     download_action(args.api_key, args.team_id, args.task_id, args.output, None)
-    download_action(args.api_key, args.team_id, args.task_id, args.deobfuscation_script_output, 'deobfuscation_script')
+    if _get_obfuscation_map_status(args.api_key, args.team_id, args.task_id):
+        download_action(args.api_key, args.team_id, args.task_id, args.deobfuscation_script_output, 'deobfuscation_script')
     download_action(args.api_key, args.team_id, args.task_id, args.sign_second_output, 'sign_second_output')
 
 

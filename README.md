@@ -40,6 +40,7 @@ python3 appdome_api.py \
 --firebase_app_id <app-id for uploading mapping file for crashlytics (requires --deobfuscation_script_output and firebase CLI tools)>
 --datadog_api_key <datadog api key for uploading mapping file to datadog (requires --deobfuscation_script_output)>
 --baseline_profile <zip file for build with baseline profile>
+--input_mapping <txt file for build with input obfuscation/minimization mapping>
 --cert_pinning_zip <zip file containing dynamic certificates>
 --signing_fingerprint_list <path_to_json_file> \
 --new_bundle_id <new bundle id>

@@ -20,7 +20,7 @@ def get_upload_link(api_key, team_id):
 def put_file_in_aws(file_path, aws_url):
     with open(file_path, 'rb') as f:
         debug_log_request(aws_url, request_type='put')
-        return requests.put(aws_url, data=f.read())
+        return requests.put(aws_url, data=f)
 
 
 def upload_using_link(api_key, team_id, file_id, file_name):
