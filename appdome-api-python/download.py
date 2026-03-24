@@ -20,7 +20,7 @@ def download_action(api_key, team_id, task_id, command_output_path, action):
     validate_response(r)
     with open(command_output_path, 'wb') as f:
         f.write(r.content)
-    logging.info(f"Downloaded {action if action else ''} output file to {command_output_path}")
+    logging.info(f"Downloaded {action + ' ' if action else ''}output file to {command_output_path}")
 
 
 def parse_arguments():

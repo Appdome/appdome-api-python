@@ -176,13 +176,19 @@ def init_overrides(overrides_file):
             overrides = json.load(f)
     return overrides
 
-def init_baseline_file(baseline_profile, files):
-    if baseline_profile:
-        files.append(("baseline_profile", (baseline_profile, open(baseline_profile, "rb"), "application/zip")))
+BUILD_FILE_SPECS = {
+    "baseline_profile": "application/zip",
+    "input_mapping": "application/txt",
+    "startup_profile": "application/zip",
+}
 
-def init_input_mapping(input_mapping, files):
-    if input_mapping:
-        files.append(("input_mapping", (input_mapping, open(input_mapping, "rb"), "application/txt")))
+
+def init_build_files(build_files, files):
+    if not build_files:
+        return
+    for key, path in build_files.items():
+        if path and key in BUILD_FILE_SPECS:
+            files.append((key, (path, open(path, "rb"), BUILD_FILE_SPECS[key])))
 
 def init_certs_pinning(cert_pinning_zip):
     """
