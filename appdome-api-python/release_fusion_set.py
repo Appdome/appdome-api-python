@@ -2,7 +2,7 @@ import argparse
 import logging
 import requests
 
-from utils import (SERVER_API_V1_URL, request_headers, validate_response, add_common_args, init_common_args, build_url)
+from utils import (SERVER_API_V1_URL, request_headers, validate_response, add_common_args, init_common_args, build_url, uuid_arg, team_id_arg)
 
 
 def release_fusion_set(api_key, fusion_set_id, team_id):
@@ -16,8 +16,8 @@ def release_fusion_set(api_key, fusion_set_id, team_id):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Releases a fusion set from one team to another')
     add_common_args(parser, add_task_id=False, add_team_id=False)
-    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id', help='Fusion set id to release')
-    parser.add_argument('-ti', '--team_id', metavar='team_id', required=True, help='The team id that will received the released fusion set')
+    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id', type=uuid_arg, help='Fusion set id to release')
+    parser.add_argument('-ti', '--team_id', metavar='team_id', required=True, type=team_id_arg, help='The team id that will received the released fusion set')
     return parser.parse_args()
 
 

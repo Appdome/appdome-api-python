@@ -6,7 +6,8 @@ from enum import Enum
 import requests
 
 from utils import (request_headers, empty_files, validate_response, debug_log_request, BUILD_TO_TEST_URL, log_and_exit,
-                   ACTION_KEY, OVERRIDES_KEY, add_common_args, init_common_args, init_overrides, team_params, TASK_ID_KEY)
+                   ACTION_KEY, OVERRIDES_KEY, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
+                   init_common_args, init_overrides, team_params, TASK_ID_KEY, uuid_arg)
 
 
 class BuildToTestVendors(Enum):
@@ -74,12 +75,12 @@ def init_automation_vendor(automation_vendor):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Initialize build_to_test app on Appdome')
     add_common_args(parser)
-    parser.add_argument('--app_id', required=True, metavar='app_id_value', help='App id on Appdome')
-    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id_value', help='Appdome Fusion Set id.')
+    parser.add_argument('--app_id', required=True, metavar='app_id_value', type=uuid_arg, help='App id on Appdome')
+    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id_value', type=uuid_arg, help='Appdome Fusion Set id.')
     parser.add_argument('-av', '--automation_vendor', required=True, metavar='automation_vendor', help='Automation vendor that the app will run on')
     parser.add_argument('-avem', '--automation_vendor_err_msg', metavar='automation_vendor_err_msg', help='The popup message when running the app on a different vendor')
-    parser.add_argument('-bv', '--build_overrides', metavar='overrides_json_file', help='Path to json file with build overrides')
-    parser.add_argument('-bl', '--diagnostic_logs', action='store_true', help="Build the app with Appdome's Diagnostic Logs (if licensed)")
+    add_build_overrides_arg(parser)
+    add_diagnostic_logs_arg(parser)
     return parser.parse_args()
 
 

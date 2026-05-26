@@ -1,7 +1,9 @@
+import argparse
 import json
 import logging
 import shutil
 import tempfile
+import uuid
 import zipfile
 from contextlib import contextmanager
 from os import getenv, makedirs, listdir
@@ -287,20 +289,40 @@ def debug_log_request(url, headers=None, data=None, params=None, files=None, req
     logging.debug(f"About to {request_type} {url}{params_line}{headers_line}{data_line}{files_line}")
 
 
-def add_common_args(parser, add_task_id=False, add_team_id=True):
+def uuid_arg(value):
+    try:
+        uuid.UUID(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f'Invalid UUID: {value!r}')
+    return value
+
+
+def team_id_arg(value):
+    return value if value == 'personal' else uuid_arg(value)
+
+
+def add_common_args(parser, add_task_id=False, add_team_id=True, task_id_required=True):
     parser.add_argument('-key', '--api_key', default=getenv(API_KEY_ENV), metavar=API_KEY_ENV,
                         help=f"Appdome API key. Default is environment variable '{API_KEY_ENV}'")
     if add_team_id:
-        parser.add_argument('-t', '--team_id', default=getenv(TEAM_ID_ENV), metavar=TEAM_ID_ENV,
+        parser.add_argument('-t', '--team_id', default=None, metavar=TEAM_ID_ENV, type=team_id_arg,
                             help=f"Appdome team id. Default is environment variable '{TEAM_ID_ENV}'")
     parser.add_argument('-v', '--verbose', action='store_true', help='Show debug logs')
     if add_task_id:
-        parser.add_argument('--task_id', required=True, metavar='task_id_value', help='Build id on Appdome')
+        parser.add_argument('-tid', '--task_id', required=task_id_required, metavar='task_id_value', type=uuid_arg,
+                            help='Build id on Appdome')
 
 
 def init_common_args(args):
     if not args.api_key:
         log_and_exit(f"api_key must be specified or set though the '{API_KEY_ENV}' environment variable")
+    if getattr(args, 'team_id', None) is None:
+        args.team_id = getenv(TEAM_ID_ENV)
+    if args.team_id is not None:
+        try:
+            args.team_id = team_id_arg(args.team_id)
+        except argparse.ArgumentTypeError as e:
+            log_and_exit(str(e))
     init_logging(args.verbose)
     if getattr(args, 'signing_fingerprint_list', None):
         resolve_signing_fingerprint_list(args)
@@ -315,6 +337,19 @@ def validate_output_path(path):
     if path_dir and not exists(path_dir):
         logging.info(f"Creating non-existent output directory [{path_dir}]")
         makedirs(path_dir)
+
+
+def add_build_overrides_arg(parser):
+    parser.add_argument('-bv', '--build_overrides', metavar='overrides_json_file',
+                        help='Path to json file with build overrides')
+
+
+def add_diagnostic_logs_arg(parser, help="Build with Appdome's Diagnostic Logs"):
+    parser.add_argument('-bl', '--diagnostic_logs', action='store_true', help=help)
+
+
+def add_output_arg(parser, required=False, help='Output file for fused and signed app after Appdome'):
+    parser.add_argument('-o', '--output', metavar='output_app_file', required=required, help=help)
 
 
 def add_signing_credentials_args(parser, required=False, add_platform_extra_signing_params=True):

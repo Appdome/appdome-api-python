@@ -94,7 +94,12 @@ def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_
         log_and_exit(f"\nTask did not complete in the specified timeout of: {timeout_sec} seconds")
 
     if status_value != 'completed':
-        log_and_exit(f"Task not completed successfully. Response: {status_response_json.get('message')}")
+        message = (
+            status_response_json.get('message')
+            or status_response_json
+            or status_response.text
+        )
+        log_and_exit(f"Task not completed successfully. Response: {message}")
 
 
 def _get_obfuscation_map_status(api_key, team_id, task_id):

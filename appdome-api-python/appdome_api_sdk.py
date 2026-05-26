@@ -10,8 +10,8 @@ from status import wait_for_status_complete
 from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
 from download import download
-from utils import (log_and_exit, add_common_args, init_common_args, validate_output_path,
-                   validate_response, ios_p12, ios_p12_password)
+from utils import (log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg, add_output_arg,
+                   init_common_args, validate_output_path, validate_response, ios_p12, ios_p12_password, uuid_arg)
 
 
 class Platform(Enum):
@@ -24,19 +24,17 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Runs Appdome API commands for SDK')
     upload_group = parser.add_mutually_exclusive_group(required=True)
     upload_group.add_argument('-a', '--app', metavar='application_file', help='Upload sdk file input path')
-    upload_group.add_argument('--app_id', metavar='app_id_value', help='sdk id of previously uploaded sdk')
+    upload_group.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help='sdk id of previously uploaded sdk')
 
     add_common_args(parser)
 
     parser.add_argument('--direct_upload', action='store_true', help="Upload sdk directly to Appdome, and not through aws pre-signed url")
-    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
+    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value', type=uuid_arg,
                         help='Appdome Fusion Set id. '
                              'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
                              'Default for iOS is environment variable APPDOME_IOS_FS_ID')
-    parser.add_argument('-bv', '--build_overrides', metavar='overrides_json_file',
-                        help='Path to json file with build overrides')
-    parser.add_argument('-bl', '--diagnostic_logs', action='store_true',
-                        help="Build the SDK with Appdome's Diagnostic Logs (if licensed)")
+    add_build_overrides_arg(parser)
+    add_diagnostic_logs_arg(parser)
 
     # Signing credentials
     parser.add_argument('-k', '--keystore', metavar='keystore_file',
@@ -45,8 +43,7 @@ def parse_arguments():
                         help='Password for keystore to use on Appdome iOS XCFramework signing.')
 
     # Output parameters
-    parser.add_argument('-o', '--output', metavar='output_app_file',
-                        help='Output file for fused SDK after Appdome')
+    add_output_arg(parser, help='Output file for fused SDK after Appdome')
     parser.add_argument('-co', '--certificate_output', metavar='certificate_output_file',
                         help='Output file for Certified Secure pdf')
     parser.add_argument('-cj', '--certificate_json', metavar='certificate_json_output_file',
@@ -71,6 +68,10 @@ def validate_args(args):
         fusion_set_id = getenv('APPDOME_IOS_FS_ID' if platform == Platform.IOS else 'APPDOME_ANDROID_FS_ID')
         if not fusion_set_id:
             log_and_exit("fusion_set_id must be specified or set though the correct platform environment variable")
+        try:
+            fusion_set_id = uuid_arg(fusion_set_id)
+        except argparse.ArgumentTypeError as e:
+            log_and_exit(str(e))
 
     validate_output_path(args.output)
     validate_output_path(args.certificate_output)

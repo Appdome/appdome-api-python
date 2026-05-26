@@ -16,11 +16,14 @@ from private_sign import private_sign_android, private_sign_ios
 from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
-from utils import (validate_response, log_and_exit, add_common_args, init_common_args, validate_output_path,
-                   init_overrides, init_build_files, init_certs_pinning, add_signing_credentials_args, TASK_ID_KEY,
+from utils import (validate_response, log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
+                   add_output_arg, init_common_args, validate_output_path, init_overrides, init_build_files,
+                   init_certs_pinning,
+                   add_signing_credentials_args,
+                   TASK_ID_KEY,
                    BUILD_FILE_SPECS,
                    android_keystore, android_keystore_pass, android_keystore_alias, android_key_pass, ios_p12, ios_p12_password,
-                   ios_provisioning_profiles, validate_trusted_fingerprint_list_args)
+                   ios_provisioning_profiles, validate_trusted_fingerprint_list_args, uuid_arg)
 from status import _get_obfuscation_map_status
 from upload_mapping_file import upload_mapping_file
 
@@ -35,19 +38,17 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Runs Appdome API commands')
     upload_group = parser.add_mutually_exclusive_group(required=True)
     upload_group.add_argument('-a', '--app', metavar='application_file', help='Upload app file input path')
-    upload_group.add_argument('--app_id', metavar='app_id_value', help='App id of previously uploaded app')
+    upload_group.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help='App id of previously uploaded app')
 
     add_common_args(parser)
 
     parser.add_argument('--direct_upload', action='store_true', help="Upload app directly to Appdome, and not through aws pre-signed url")
-    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value',
+    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value', type=uuid_arg,
                         help='Appdome Fusion Set id. '
                              'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
                              'Default for iOS is environment variable APPDOME_IOS_FS_ID')
-    parser.add_argument('-bv', '--build_overrides', metavar='overrides_json_file',
-                        help='Path to json file with build overrides')
-    parser.add_argument('-bl', '--diagnostic_logs', action='store_true',
-                        help="Build the app with Appdome's Diagnostic Logs (if licensed)")
+    add_build_overrides_arg(parser)
+    add_diagnostic_logs_arg(parser)
     parser.add_argument('-faid', '--firebase_app_id', metavar='firebase_app_id',
                         help='App ID in Firebase project (required for Crashlytics)')
     parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key',
@@ -71,8 +72,7 @@ def parse_arguments():
 
     add_signing_credentials_args(parser)
     # Output parameters
-    parser.add_argument('-o', '--output', metavar='output_app_file',
-                        help='Output file for fused and signed app after Appdome')
+    add_output_arg(parser)
     parser.add_argument('-dso', '--deobfuscation_script_output', metavar='deobfuscation_scripts_zip_file',
                         help='Output file deobfuscation scripts when building with "Obfuscate App Logic"')
     parser.add_argument('--sign_second_output', metavar='second_output_app_file',
@@ -113,6 +113,10 @@ def validate_args(args):
         fusion_set_id = getenv('APPDOME_IOS_FS_ID' if platform == Platform.IOS else 'APPDOME_ANDROID_FS_ID')
         if not fusion_set_id:
             log_and_exit(f"fusion_set_id must be specified or set though the correct platform environment variable")
+        try:
+            fusion_set_id = uuid_arg(fusion_set_id)
+        except argparse.ArgumentTypeError as e:
+            log_and_exit(str(e))
 
     if args.private_signing or args.auto_dev_private_signing:
         if platform == Platform.ANDROID and not args.signing_fingerprint and not args.signing_fingerprint_list:
