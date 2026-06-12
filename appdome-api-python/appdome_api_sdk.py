@@ -6,10 +6,10 @@ from os.path import splitext
 from appdome_api import _upload, _build, _download_file
 from private_sign import private_sign_ios
 from sign import sign_ios
-from status import wait_for_status_complete
+from status import wait_for_status_complete, _get_obfuscation_map_status
 from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
-from download import download
+from download import download, download_action
 from utils import (log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg, add_output_arg,
                    init_common_args, validate_output_path, validate_response, ios_p12, ios_p12_password, uuid_arg)
 
@@ -44,6 +44,8 @@ def parse_arguments():
 
     # Output parameters
     add_output_arg(parser, help='Output file for fused SDK after Appdome')
+    parser.add_argument('-dso', '--deobfuscation_script_output', metavar='deobfuscation_scripts_zip_file',
+                        help='Output file deobfuscation scripts when building Android SDKs with "Obfuscate SDK Logic"')
     parser.add_argument('-co', '--certificate_output', metavar='certificate_output_file',
                         help='Output file for Certified Secure pdf')
     parser.add_argument('-cj', '--certificate_json', metavar='certificate_json_output_file',
@@ -74,6 +76,7 @@ def validate_args(args):
             log_and_exit(str(e))
 
     validate_output_path(args.output)
+    validate_output_path(args.deobfuscation_script_output)
     validate_output_path(args.certificate_output)
     validate_output_path(args.certificate_json)
     if platform == Platform.IOS:
@@ -107,6 +110,11 @@ def main():
     _sign(args, platform, task_id, args.workflow_output_logs)
     if args.output:
         _download_file(args.api_key, args.team_id, task_id, args.output, download)
+    if args.deobfuscation_script_output:
+        if platform == Platform.ANDROID and _get_obfuscation_map_status(args.api_key, args.team_id, task_id):
+            download_action(args.api_key, args.team_id, task_id, args.deobfuscation_script_output, 'deobfuscation_script')
+        else:
+            logging.info("Deobfuscation scripts were not found. Make sure this is an Android SDK build that uses Obfuscate SDK Logic.")
     if args.certificate_output:
         _download_file(args.api_key, args.team_id, task_id, args.certificate_output, download_certified_secure)
     if args.certificate_json:

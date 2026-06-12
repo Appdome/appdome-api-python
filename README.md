@@ -55,6 +55,10 @@ python3 appdome_api.py \
 
 #### Android SDK Example:
 
+Required inputs for this sample are the API key, team ID, Fusion Set ID, SDK file, protected SDK output path, and
+Certified Secure PDF output path. For Android SDK Protect only, include `--deobfuscation_script_output` when you want the Obfuscate SDK Logic
+mapping ZIP downloaded as part of the same run.
+
 ```python
 python3 appdome_api_sdk.py \
 --api_key <api key> \
@@ -62,7 +66,8 @@ python3 appdome_api_sdk.py \
 --team_id <team-id> \
 --app <aar> \
 --output <output aar> \
---certificate_output <output certificate pdf> \
+--certificate_output <output Certified Secure pdf> \
+--deobfuscation_script_output <file path for downloading deobfuscation zip file> \
 --build_overrides <json_file_path> 
 ```
 
@@ -93,6 +98,10 @@ python3 appdome_api.py \
 
 #### iOS SDK Example:
 
+Required inputs for this sample are the API key, team ID, Fusion Set ID, SDK file, protected SDK output path, and
+Certified Secure PDF output path. The keystore inputs are only needed for Appdome signing. Deobfuscation mapping
+files are only available for Android SDK Protect.
+
 ```python
 python3 appdome_api_sdk.py \
 --api_key <api key> \
@@ -102,7 +111,7 @@ python3 appdome_api_sdk.py \
 --keystore <p12 file> \  # only needed for sign on Appdome
 --keystore_pass <p12 password> \ # only needed for sign on Appdome
 --output <output zip> \
---certificate_output <output certificate pdf> \
+--certificate_output <output Certified Secure pdf> \
 --build_overrides <json_file_path> 
 ```
 
