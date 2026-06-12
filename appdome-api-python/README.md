@@ -49,6 +49,30 @@ Private Signing and Auto-Dev Private Signing can also be invoked in the whole pr
 using the params `--private_signing` or `--auto_dev_private_signing` instead of `--sign_on_appdome`
 and adjusting the required signing parameters.
 
+## Android SDK Protect whole process
+
+Required inputs for this sample are the SDK file, protected SDK output path, and Certified Secure PDF output path.
+For Android SDK Protect only, include `--deobfuscation_script_output` when you want the Obfuscate SDK Logic mapping
+ZIP downloaded as part of the same run.
+
+```
+python3 appdome_api_sdk.py --app <aar file>
+--output <output aar>
+--certificate_output <output Certified Secure pdf>
+--deobfuscation_script_output <file path for downloading deobfuscation zip file>
+```
+
+## iOS SDK Protect whole process
+
+Required inputs for this sample are the SDK file, protected SDK output path, and Certified Secure PDF output path.
+Deobfuscation mapping files are only available for Android SDK Protect.
+
+```
+python3 appdome_api_sdk.py --app <xcframework zip file>
+--output <output zip>
+--certificate_output <output Certified Secure pdf>
+```
+
 ___
 ## The next section details individual actions
 ___
