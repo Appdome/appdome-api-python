@@ -13,8 +13,8 @@ All APIs are documented in https://apis.appdome.com/docs.
 ---
 
 ## Requirements
-- Python **3.6 or later**
-- `requests` library **>= 2.26.0`
+- Python **3.7 or later**
+- `requests` library **>= 2.28.0`
 
 
 ## Basic Flow Usage
