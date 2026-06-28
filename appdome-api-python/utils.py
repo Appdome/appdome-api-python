@@ -339,6 +339,20 @@ def validate_output_path(path):
         makedirs(path_dir)
 
 
+def add_upload_args(parser, include_app_id=False, sdk=False):
+    app_help = 'Upload app file input path'
+    app_id_help = 'App id of previously uploaded app'
+    if sdk:
+        app_help = app_help.replace('app', 'sdk')
+        app_id_help = app_id_help.replace('app', 'sdk')
+    target = parser.add_mutually_exclusive_group(required=True) if include_app_id else parser
+    target.add_argument('-a', '--app', required=not include_app_id, metavar='application_file', help=app_help)
+    if include_app_id:
+        target.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help=app_id_help)
+    parser.add_argument('--skip_upload_checksum_call', action='store_true',
+                        help='Skip check-by-checksum API call before upload')
+
+
 def add_build_overrides_arg(parser):
     parser.add_argument('-bv', '--build_overrides', metavar='overrides_json_file',
                         help='Path to json file with build overrides')

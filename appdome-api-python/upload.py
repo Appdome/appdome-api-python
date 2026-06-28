@@ -4,8 +4,9 @@ from os.path import basename
 
 import requests
 
-from utils import (SERVER_API_V1_URL, UPLOAD_URL, request_headers, empty_files, validate_response, debug_log_request, 
- 									  add_common_args, log_and_exit, init_common_args, build_url, team_params)
+from check_by_checksum import get_existing_app_id
+from utils import (SERVER_API_V1_URL, UPLOAD_URL, request_headers, empty_files, validate_response, debug_log_request,
+                   add_common_args, add_upload_args, log_and_exit, init_common_args, build_url, team_params)
 from status import wait_for_status_complete
 
 
@@ -33,8 +34,13 @@ def upload_using_link(api_key, team_id, file_id, file_name):
     return requests.post(url, headers=headers, params=params, data=body, files=empty_files())
 
 
-def upload(api_key, team_id, file_path):
+def upload(api_key, team_id, file_path, skip_upload_checksum_call=False):
     logging.info(f"Preparing to upload [{file_path}]")
+    existing_app_id = get_existing_app_id(api_key, team_id, file_path, skip_upload_checksum_call)
+    if existing_app_id:
+        logging.info(f"Found existing app by checksum. App id: {existing_app_id}")
+        return existing_app_id
+
     upload_link_response = get_upload_link(api_key, team_id)
     validate_response(upload_link_response)
     upload_link_json = upload_link_response.json()
@@ -52,22 +58,21 @@ def upload(api_key, team_id, file_path):
     validate_response(app)
     app_id = app.json()['id']
     wait_for_status_complete(api_key, team_id, app_id, url=UPLOAD_URL, operation="upload")
-    return app
+    return app_id
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Upload app to Appdome')
     add_common_args(parser)
-    parser.add_argument('-a', '--app', required=True, metavar='application_file', help='Upload app file input path')
+    add_upload_args(parser)
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
     init_common_args(args)
-    r = upload(args.api_key, args.team_id, args.app)
-    validate_response(r)
-    logging.info(f"Upload success: App id: {r.json()['id']}")
+    app_id = upload(args.api_key, args.team_id, args.app, args.skip_upload_checksum_call)
+    logging.info(f"Upload success: App id: {app_id}")
 
 
 if __name__ == '__main__':

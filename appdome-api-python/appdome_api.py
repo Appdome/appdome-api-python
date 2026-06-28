@@ -17,7 +17,7 @@ from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
 from utils import (validate_response, log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
-                   add_output_arg, init_common_args, validate_output_path, init_overrides, init_build_files,
+                   add_output_arg, add_upload_args, init_common_args, validate_output_path, init_overrides, init_build_files,
                    init_certs_pinning,
                    add_signing_credentials_args,
                    TASK_ID_KEY,
@@ -36,9 +36,7 @@ class Platform(Enum):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Runs Appdome API commands')
-    upload_group = parser.add_mutually_exclusive_group(required=True)
-    upload_group.add_argument('-a', '--app', metavar='application_file', help='Upload app file input path')
-    upload_group.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help='App id of previously uploaded app')
+    add_upload_args(parser, include_app_id=True)
 
     add_common_args(parser)
 
@@ -151,12 +149,11 @@ def validate_args(args):
     return platform, fusion_set_id
 
 
-def _upload(api_key, team_id, app_path, direct_upload_param=False):
+def _upload(api_key, team_id, app_path, direct_upload_param=False, skip_upload_checksum_call=False):
     upload_func = direct_upload if direct_upload_param else upload
-    upload_response = upload_func(api_key, team_id, app_path)
-    validate_response(upload_response)
-    logging.info(f"Upload done. App-id: {upload_response.json()['id']}")
-    return upload_response.json()['id']
+    app_id = upload_func(api_key, team_id, app_path, skip_upload_checksum_call=skip_upload_checksum_call)
+    logging.info(f"Upload done. App-id: {app_id}")
+    return app_id
 
 
 def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnostic_logs, build_to_test_vendor,
@@ -238,7 +235,8 @@ def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
 
-    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload) if args.app else args.app_id
+    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload,
+                     args.skip_upload_checksum_call) if args.app else args.app_id
 
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
                      args.build_to_test_vendor, args.workflow_output_logs, args.cert_pinning_zip, args)

@@ -11,7 +11,7 @@ from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
 from download import download, download_action
 from utils import (log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg, add_output_arg,
-                   init_common_args, validate_output_path, validate_response, ios_p12, ios_p12_password, uuid_arg)
+                   add_upload_args, init_common_args, validate_output_path, validate_response, ios_p12, ios_p12_password, uuid_arg)
 
 
 class Platform(Enum):
@@ -22,9 +22,7 @@ class Platform(Enum):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Runs Appdome API commands for SDK')
-    upload_group = parser.add_mutually_exclusive_group(required=True)
-    upload_group.add_argument('-a', '--app', metavar='application_file', help='Upload sdk file input path')
-    upload_group.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help='sdk id of previously uploaded sdk')
+    add_upload_args(parser, include_app_id=True, sdk=True)
 
     add_common_args(parser)
 
@@ -104,7 +102,8 @@ def _sign(args, platform, task_id, workflow_output_logs=None):
 def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
-    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload) if args.app else args.app_id
+    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload,
+                     args.skip_upload_checksum_call) if args.app else args.app_id
     task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
                      None, args.workflow_output_logs)
     _sign(args, platform, task_id, args.workflow_output_logs)
