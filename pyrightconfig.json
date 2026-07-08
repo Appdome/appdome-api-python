@@ -1,0 +1,10 @@
+{
+    "include": [
+        "appdome-api-python",
+        "appdome-teams-api-python"
+    ],
+    "extraPaths": [
+        "appdome-api-python",
+        "appdome-teams-api-python"
+    ]
+}
