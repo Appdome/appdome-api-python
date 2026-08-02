@@ -16,7 +16,7 @@ def download_action(api_key, team_id, task_id, command_output_path, action):
     validate_output_path(command_output_path)
     r = download(api_key, team_id, task_id, action)
     if action == 'deobfuscation_script' and r.status_code == 404:
-        logging.debug(f"couldn't find deobfuscation scripts.")
+        logging.debug("Couldn't find deobfuscation scripts.")
         return
     validate_response(r)
     with open(command_output_path, 'wb') as f:

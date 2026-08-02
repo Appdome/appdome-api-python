@@ -71,7 +71,7 @@ def main():
                      ios_provisioning_profiles(args), args.entitlements, overrides)
 
     validate_response(r)
-    logging.info(f"On Appdome signing for Build id: {r.json()[TASK_ID_KEY]} started")
+    logging.info(f"On Appdome signing for Build ID: {r.json()[TASK_ID_KEY]} started")
 
 
 if __name__ == '__main__':

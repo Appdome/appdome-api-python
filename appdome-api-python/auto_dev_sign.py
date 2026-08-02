@@ -55,7 +55,7 @@ def main():
         r = auto_dev_sign_ios(args.api_key, args.team_id, args.task_id, args.provisioning_profiles, args.entitlements, overrides)
 
     validate_response(r)
-    logging.info(f"Auto-DEV private signing for Build id: {r.json()[TASK_ID_KEY]} started")
+    logging.info(f"Auto-DEV private signing for Build ID: {r.json()[TASK_ID_KEY]} started")
 
 
 if __name__ == '__main__':

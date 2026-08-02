@@ -38,7 +38,7 @@ def upload(api_key, team_id, file_path, skip_upload_checksum_call=False):
     logging.info(f"Preparing to upload [{file_path}]")
     existing_app_id = get_existing_app_id(api_key, team_id, file_path, skip_upload_checksum_call)
     if existing_app_id:
-        logging.info(f"Found existing app by checksum. App id: {existing_app_id}")
+        logging.info(f"Found existing app by checksum. App ID: {existing_app_id}")
         return existing_app_id
 
     upload_link_response = get_upload_link(api_key, team_id)
@@ -49,7 +49,7 @@ def upload(api_key, team_id, file_path, skip_upload_checksum_call=False):
     if not aws_url or not file_id:
         log_and_exit('Error in upload link response: ' + upload_link_response.text)
 
-    logging.info(f"Uploading file id {file_id}")
+    logging.info(f"Uploading file ID {file_id}")
     aws_put_response = put_file_in_aws(file_path, aws_url)
     logging.info(f"Upload status: uploading to our cloud")
     validate_response(aws_put_response)
@@ -72,7 +72,7 @@ def main():
     args = parse_arguments()
     init_common_args(args)
     app_id = upload(args.api_key, args.team_id, args.app, args.skip_upload_checksum_call)
-    logging.info(f"Upload success: App id: {app_id}")
+    logging.info(f"Upload success: App ID: {app_id}")
 
 
 if __name__ == '__main__':

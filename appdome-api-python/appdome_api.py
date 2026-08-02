@@ -17,13 +17,11 @@ from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
 from utils import (validate_response, log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
-                   add_output_arg, add_upload_args, init_common_args, validate_output_path, init_overrides, init_build_files,
-                   init_certs_pinning,
-                   add_signing_credentials_args,
-                   TASK_ID_KEY,
-                   BUILD_FILE_SPECS,
-                   android_keystore, android_keystore_pass, android_keystore_alias, android_key_pass, ios_p12, ios_p12_password,
-                   ios_provisioning_profiles, validate_trusted_fingerprint_list_args, uuid_arg)
+                   add_fusion_set_id_arg, add_output_arg, add_upload_args, init_common_args, validate_output_path,
+                   init_overrides, init_build_files, init_certs_pinning, add_signing_credentials_args, TASK_ID_KEY,
+                   BUILD_FILE_SPECS, android_keystore, android_keystore_pass, android_keystore_alias, android_key_pass,
+                   ios_p12, ios_p12_password, ios_provisioning_profiles, validate_trusted_fingerprint_list_args,
+                   uuid_arg)
 from status import _get_obfuscation_map_status
 from upload_mapping_file import upload_mapping_file
 
@@ -41,10 +39,9 @@ def parse_arguments():
     add_common_args(parser)
 
     parser.add_argument('--direct_upload', action='store_true', help="Upload app directly to Appdome, and not through aws pre-signed url")
-    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value', type=uuid_arg,
-                        help='Appdome Fusion Set id. '
-                             'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
-                             'Default for iOS is environment variable APPDOME_IOS_FS_ID')
+    add_fusion_set_id_arg(parser, help='Appdome Fusion Set ID. '
+                                       'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
+                                       'Default for iOS is environment variable APPDOME_IOS_FS_ID')
     add_build_overrides_arg(parser)
     add_diagnostic_logs_arg(parser)
     parser.add_argument('-faid', '--firebase_app_id', metavar='firebase_app_id',
@@ -56,7 +53,7 @@ def parse_arguments():
     parser.add_argument('-startup_profile', '--startup_profile', metavar='startup_profile',
                         help='startup profile file to use')
     parser.add_argument('-input_mapping', '--input_mapping', metavar='input_mapping',
-                        help='input obfuscation/minimization mapping file to use')
+                        help='Input obfuscation/minimization mapping file to use')
     parser.add_argument('-cert_zip', '--cert_pinning_zip', metavar='cert_pinning_zip',
                         help='Path to zip file containing dynamic certificates for certificate pinning')
 
@@ -110,7 +107,7 @@ def validate_args(args):
     if not fusion_set_id:
         fusion_set_id = getenv('APPDOME_IOS_FS_ID' if platform == Platform.IOS else 'APPDOME_ANDROID_FS_ID')
         if not fusion_set_id:
-            log_and_exit(f"fusion_set_id must be specified or set though the correct platform environment variable")
+            log_and_exit(f"The Fusion Set ID must be specified or set through the correct platform environment variable")
         try:
             fusion_set_id = uuid_arg(fusion_set_id)
         except argparse.ArgumentTypeError as e:
@@ -118,18 +115,18 @@ def validate_args(args):
 
     if args.private_signing or args.auto_dev_private_signing:
         if platform == Platform.ANDROID and not args.signing_fingerprint and not args.signing_fingerprint_list:
-            log_and_exit(f"signing_fingerprint or signing_fingerprint_list must be specified when using any Android local signing")
+            log_and_exit(f"Either signing_fingerprint or signing_fingerprint_list must be specified when using any Android local signing")
 
     if platform == Platform.IOS and not ios_provisioning_profiles(args):
-        log_and_exit(f"provisioning_profiles must be specified when using any iOS signing")
+        log_and_exit(f"Provisioning profiles must be specified when using any iOS signing")
 
     if args.sign_on_appdome:
         if platform == Platform.IOS:
             if not all([ios_p12(args), ios_p12_password(args)]):
-                log_and_exit(f"All ios signing credentials(keystore, keystore_pass) must be specified when using on Appdome signing")
+                log_and_exit(f'All iOS signing credentials(keystore, keystore_pass) must be specified when using "On Appdome" signing')
         if platform == Platform.ANDROID:
             if not all([android_keystore(args), android_keystore_pass(args), android_keystore_alias(args), android_key_pass(args)]):
-                log_and_exit(f"All android signing credentials(keystore, keystore_pass, keystore_alias, key_pass) must be specified when using on Appdome signing")
+                log_and_exit(f'All Android signing credentials(keystore, keystore_pass, keystore_alias, key_pass) must be specified when using "On Appdome" signing')
         if args.google_play_signing and not args.signing_fingerprint:
             log_and_exit(f"Google signing fingerprint requires providing a signing fingerprint")
 
@@ -152,7 +149,7 @@ def validate_args(args):
 def _upload(api_key, team_id, app_path, direct_upload_param=False, skip_upload_checksum_call=False):
     upload_func = direct_upload if direct_upload_param else upload
     app_id = upload_func(api_key, team_id, app_path, skip_upload_checksum_call=skip_upload_checksum_call)
-    logging.info(f"Upload done. App-id: {app_id}")
+    logging.info(f"Upload done. App ID: {app_id}")
     return app_id
 
 

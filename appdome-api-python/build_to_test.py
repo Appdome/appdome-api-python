@@ -6,8 +6,9 @@ from enum import Enum
 import requests
 
 from utils import (request_headers, empty_files, validate_response, debug_log_request, BUILD_TO_TEST_URL, log_and_exit,
-                   ACTION_KEY, OVERRIDES_KEY, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
-                   init_common_args, init_overrides, team_params, TASK_ID_KEY, uuid_arg)
+                   ACTION_KEY, OVERRIDES_KEY, add_app_id_arg, add_build_overrides_arg, add_common_args,
+                   add_diagnostic_logs_arg, add_fusion_set_id_arg, init_common_args, init_overrides, team_params,
+                   TASK_ID_KEY)
 
 
 class BuildToTestVendors(Enum):
@@ -75,8 +76,8 @@ def init_automation_vendor(automation_vendor):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Initialize build_to_test app on Appdome')
     add_common_args(parser)
-    parser.add_argument('--app_id', required=True, metavar='app_id_value', type=uuid_arg, help='App id on Appdome')
-    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id_value', type=uuid_arg, help='Appdome Fusion Set id.')
+    add_app_id_arg(parser, required=True)
+    add_fusion_set_id_arg(parser, required=True)
     parser.add_argument('-av', '--automation_vendor', required=True, metavar='automation_vendor', help='Automation vendor that the app will run on')
     parser.add_argument('-avem', '--automation_vendor_err_msg', metavar='automation_vendor_err_msg', help='The popup message when running the app on a different vendor')
     add_build_overrides_arg(parser)
@@ -95,7 +96,7 @@ def main():
     r = build_to_test(args.api_key, args.team_id, args.app_id, args.fusion_set_id, automation_vendor.name,
                       automation_vendor_err_msg, overrides, args.diagnostic_logs)
     validate_response(r)
-    logging.info(f"Build_to_test started: Build id: {r.json()[TASK_ID_KEY]}")
+    logging.info(f"Build_to_test started: Build ID: {r.json()[TASK_ID_KEY]}")
 
 
 if __name__ == '__main__':

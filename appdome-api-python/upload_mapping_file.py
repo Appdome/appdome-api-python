@@ -48,7 +48,7 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description="Upload Deobfuscation Mapping Files to Datadog/Crashlytics")
     parser.add_argument('--mapping_files', '-dso', required=True, metavar='mapping_files',
-                        help='deobfuscation zip file when building with "Obfuscate App Logic"')
+                        help='Deobfuscation zip file when building with "Obfuscate App Logic"')
     parser.add_argument("-faid", '--firebase_app_id', metavar='firebase_app_id',
                         help="Firebase App ID (for Crashlytics)")
     parser.add_argument('-dd_api_key', '--datadog_api_key', metavar='datadog_api_key', help="Datadog API key")

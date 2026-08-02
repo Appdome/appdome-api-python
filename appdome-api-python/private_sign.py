@@ -53,7 +53,7 @@ def main():
         r = private_sign_ios(args.api_key, args.team_id, args.task_id, args.provisioning_profiles, overrides)
 
     validate_response(r)
-    logging.info(f"Private signing for Build id: {r.json()[TASK_ID_KEY]} started")
+    logging.info(f"Private signing for Build ID: {r.json()[TASK_ID_KEY]} started")
 
 
 if __name__ == '__main__':

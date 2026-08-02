@@ -5,8 +5,9 @@ import logging
 import requests
 
 from utils import (request_headers, empty_files, validate_response, debug_log_request, TASKS_URL,
-                   ACTION_KEY, OVERRIDES_KEY, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
-                   init_common_args, init_overrides, team_params, TASK_ID_KEY, uuid_arg)
+                   ACTION_KEY, OVERRIDES_KEY, add_app_id_arg, add_build_overrides_arg, add_common_args,
+                   add_diagnostic_logs_arg, add_fusion_set_id_arg, init_common_args, init_overrides, team_params,
+                   TASK_ID_KEY)
 
 
 def create_build_request(api_key, team_id, app_id, fusion_set_id, overrides=None, use_diagnostic_logs=False):
@@ -35,8 +36,8 @@ def build(api_key, team_id, app_id, fusion_set_id, overrides=None, use_diagnosti
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Initialize Build app on Appdome')
     add_common_args(parser)
-    parser.add_argument('--app_id', required=True, metavar='app_id_value', type=uuid_arg, help='App id on Appdome')
-    parser.add_argument('-fs', '--fusion_set_id', required=True, metavar='fusion_set_id_value', type=uuid_arg, help='Appdome Fusion Set id.')
+    add_app_id_arg(parser, required=True)
+    add_fusion_set_id_arg(parser, required=True)
     add_build_overrides_arg(parser)
     add_diagnostic_logs_arg(parser)
     return parser.parse_args()
@@ -50,7 +51,7 @@ def main():
 
     r = build(args.api_key, args.team_id, args.app_id, args.fusion_set_id, overrides, args.diagnostic_logs)
     validate_response(r)
-    logging.info(f"Build started: Build id: {r.json()[TASK_ID_KEY]}")
+    logging.info(f"Build started: Build ID: {r.json()[TASK_ID_KEY]}")
 
 
 if __name__ == '__main__':

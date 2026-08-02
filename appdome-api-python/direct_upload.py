@@ -12,7 +12,7 @@ from utils import (build_url, team_params, SERVER_API_V1_URL, request_headers, v
 def direct_upload(api_key, team_id, file_path, skip_upload_checksum_call=False):
     existing_app_id = get_existing_app_id(api_key, team_id, file_path, skip_upload_checksum_call)
     if existing_app_id:
-        logging.info(f"Found existing app by checksum. App id: {existing_app_id}")
+        logging.info(f"Found existing app by checksum. App ID: {existing_app_id}")
         return existing_app_id
 
     url = build_url(SERVER_API_V1_URL, 'upload')
@@ -27,7 +27,7 @@ def direct_upload(api_key, team_id, file_path, skip_upload_checksum_call=False):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Upload app to directly to Appdome')
+    parser = argparse.ArgumentParser(description='Upload app directly to Appdome')
     add_common_args(parser)
     add_upload_args(parser)
     return parser.parse_args()
@@ -37,7 +37,7 @@ def main():
     args = parse_arguments()
     init_common_args(args)
     app_id = direct_upload(args.api_key, args.team_id, args.app, args.skip_upload_checksum_call)
-    logging.info(f"Direct upload success: App id: {app_id}")
+    logging.info(f"Direct upload success: App ID: {app_id}")
 
 
 if __name__ == '__main__':

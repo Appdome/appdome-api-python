@@ -306,16 +306,16 @@ def add_common_args(parser, add_task_id=False, add_team_id=True, task_id_require
                         help=f"Appdome API key. Default is environment variable '{API_KEY_ENV}'")
     if add_team_id:
         parser.add_argument('-t', '--team_id', default=None, metavar=TEAM_ID_ENV, type=team_id_arg,
-                            help=f"Appdome team id. Default is environment variable '{TEAM_ID_ENV}'")
+                            help=f"Appdome team ID. Default is environment variable '{TEAM_ID_ENV}'")
     parser.add_argument('-v', '--verbose', action='store_true', help='Show debug logs')
     if add_task_id:
         parser.add_argument('-tid', '--task_id', required=task_id_required, metavar='task_id_value', type=uuid_arg,
-                            help='Build id on Appdome')
+                            help='Build ID on Appdome')
 
 
 def init_common_args(args):
     if not args.api_key:
-        log_and_exit(f"api_key must be specified or set though the '{API_KEY_ENV}' environment variable")
+        log_and_exit(f"The API key must be specified or set through the '{API_KEY_ENV}' environment variable")
     if getattr(args, 'team_id', None) is None:
         args.team_id = getenv(TEAM_ID_ENV)
     if args.team_id is not None:
@@ -341,16 +341,25 @@ def validate_output_path(path):
 
 def add_upload_args(parser, include_app_id=False, sdk=False):
     app_help = 'Upload app file input path'
-    app_id_help = 'App id of previously uploaded app'
+    app_id_help = 'App ID of previously uploaded app'
     if sdk:
         app_help = app_help.replace('app', 'sdk')
         app_id_help = app_id_help.replace('app', 'sdk')
     target = parser.add_mutually_exclusive_group(required=True) if include_app_id else parser
     target.add_argument('-a', '--app', required=not include_app_id, metavar='application_file', help=app_help)
     if include_app_id:
-        target.add_argument('--app_id', metavar='app_id_value', type=uuid_arg, help=app_id_help)
+        add_app_id_arg(target, help=app_id_help)
     parser.add_argument('--skip_upload_checksum_call', action='store_true',
                         help='Skip check-by-checksum API call before upload')
+
+
+def add_app_id_arg(parser, required=False, help='App ID on Appdome'):
+    parser.add_argument('--app_id', required=required, metavar='app_id_value', type=uuid_arg, help=help)
+
+
+def add_fusion_set_id_arg(parser, required=False, help='Appdome Fusion Set ID.'):
+    parser.add_argument('-fs', '--fusion_set_id', required=required, metavar='fusion_set_id_value', type=uuid_arg,
+                        help=help)
 
 
 def add_build_overrides_arg(parser):
@@ -400,7 +409,7 @@ def add_common_private_signing_args(parser, add_platform_extra_signing_params=Tr
 
 
 def add_provisioning_profiles_arg(target):
-    target.add_argument('-pr', '--provisioning_profiles', nargs='+', metavar='provisioning_profile_file', help='Path to iOS provisioning profiles files to use. Can be multiple profiles')
+    target.add_argument('-pr', '--provisioning_profiles', nargs='+', metavar='provisioning_profile_file', help='Path to iOS provisioning profiles to use. Can be multiple profiles')
 
 
 def add_signing_fingerprint_arg(target):

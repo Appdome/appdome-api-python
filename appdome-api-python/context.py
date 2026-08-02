@@ -55,7 +55,7 @@ def main():
     r = context(args.api_key, args.team_id, args.task_id, args.new_bundle_id, args.new_version, args.new_build_num,
                 args.new_display_name, args.app_icon, args.icon_overlay)
     validate_response(r)
-    logging.info(f"Context for Build id: {r.json()[TASK_ID_KEY]} started")
+    logging.info(f"Context for Build ID: {r.json()[TASK_ID_KEY]} started")
 
 
 if __name__ == '__main__':

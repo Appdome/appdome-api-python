@@ -10,8 +10,9 @@ from status import wait_for_status_complete, _get_obfuscation_map_status
 from certified_secure import download_certified_secure
 from certified_secure_json import download_certified_secure_json, format_json_file
 from download import download, download_action
-from utils import (log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg, add_output_arg,
-                   add_upload_args, init_common_args, validate_output_path, validate_response, ios_p12, ios_p12_password, uuid_arg)
+from utils import (log_and_exit, add_build_overrides_arg, add_common_args, add_diagnostic_logs_arg,
+                   add_fusion_set_id_arg, add_output_arg, add_upload_args, init_common_args, validate_output_path,
+                   validate_response, ios_p12, ios_p12_password, uuid_arg)
 
 
 class Platform(Enum):
@@ -27,10 +28,9 @@ def parse_arguments():
     add_common_args(parser)
 
     parser.add_argument('--direct_upload', action='store_true', help="Upload sdk directly to Appdome, and not through aws pre-signed url")
-    parser.add_argument('-fs', '--fusion_set_id', metavar='fusion_set_id_value', type=uuid_arg,
-                        help='Appdome Fusion Set id. '
-                             'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
-                             'Default for iOS is environment variable APPDOME_IOS_FS_ID')
+    add_fusion_set_id_arg(parser, help='Appdome Fusion Set ID. '
+                                       'Default for Android is environment variable APPDOME_ANDROID_FS_ID. '
+                                       'Default for iOS is environment variable APPDOME_IOS_FS_ID')
     add_build_overrides_arg(parser)
     add_diagnostic_logs_arg(parser)
 
@@ -67,7 +67,7 @@ def validate_args(args):
     if not fusion_set_id:
         fusion_set_id = getenv('APPDOME_IOS_FS_ID' if platform == Platform.IOS else 'APPDOME_ANDROID_FS_ID')
         if not fusion_set_id:
-            log_and_exit("fusion_set_id must be specified or set though the correct platform environment variable")
+            log_and_exit("The Fusion Set ID must be specified or set through the correct platform environment variable")
         try:
             fusion_set_id = uuid_arg(fusion_set_id)
         except argparse.ArgumentTypeError as e:
@@ -79,7 +79,7 @@ def validate_args(args):
     validate_output_path(args.certificate_json)
     if platform == Platform.IOS:
         if (ios_p12(args) is None) ^ (ios_p12_password(args) is None):  # XOR operator to check if only one is None
-            log_and_exit("keystore and keystore_pass must be specified")
+            log_and_exit("The keystore and keystore_pass must be specified")
         elif ios_p12(args) is None and ios_p12_password(args) is None:
             logging.info("Keystore and keystore_pass weren't supplied. Will continue with private sign.")
     return platform, fusion_set_id
