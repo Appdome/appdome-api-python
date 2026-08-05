@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import shutil
+import sys
 import tempfile
 import uuid
 import zipfile
@@ -269,9 +270,15 @@ def value_to_print(value):
 
 
 def log_and_exit(log_line):
-    import sys
     sys.tracebacklimit = 0
     raise Exception(log_line)
+
+
+def validate_required_params(params):
+    missing = [name for name, value in params.items() if not value]
+    if missing:
+        logging.error(f'Missing required parameters: {", ".join(missing)}')
+        sys.exit(1)
 
 
 def init_logging(verbose=False):
