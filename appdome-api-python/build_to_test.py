@@ -20,7 +20,7 @@ class BuildToTestVendors(Enum):
     AUTOMATION_FIREBASE = 'firebase'
     AUTOMATION_KATALON = 'katalon'
     AUTOMATION_KOBITON = 'kobiton'
-    AUTOMATION_TOSCA = 'tricentis_device_cloud'
+    AUTOMATION_TRICENTIS_DEVICE_CLOUD = 'tricentis_device_cloud'
     AUTOMATION_AWS_DEVICE_FARM = 'aws_device_farm'
     AUTOMATION_APP_DEBUG = 'app_debug'
     AUTOMATION_APP_PROFILER = 'app_profiler'
