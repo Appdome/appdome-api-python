@@ -13,6 +13,7 @@ from context import context, add_context_args
 from direct_upload import direct_upload
 from download import download, download_action
 from private_sign import private_sign_android, private_sign_ios
+from pwa_upload import init_pwa_config, pwa_build, pwa_overrides, add_pwa_provisioning_profiles
 from sign import sign_android, sign_ios
 from status import wait_for_status_complete
 from upload import upload
@@ -32,9 +33,22 @@ class Platform(Enum):
     IOS = 2
 
 
+PWA_PLATFORMS = {'aab': Platform.ANDROID, 'ipa': Platform.IOS}
+# Options that only apply to uploading an app file do not apply to --pwa.
+# --build_overrides and --diagnostic_logs are sent as the PWA request overrides (and to the build when there is no
+# automatic Short Flow build). --fusion_set_id is used only when the account has no Short Flow.
+PWA_UNSUPPORTED_BUILD_ARGS = ('build_to_test_vendor', 'baseline_profile', 'startup_profile',
+                              'input_mapping', 'cert_pinning_zip', 'direct_upload', 'skip_upload_checksum_call')
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Runs Appdome API commands')
-    add_upload_args(parser, include_app_id=True)
+    upload_group = add_upload_args(parser, include_app_id=True)
+    upload_group.add_argument('--pwa', metavar='pwa_config_json_file',
+                              help='Build a Secure PWA instead of uploading an app. Path to json file with PWA '
+                                   'parameters (pwa_address, pwa_platform: aab or ipa, pwa_app_name, overrides). '
+                                   'Replaces the upload step. With Short Flow the upload also builds with the '
+                                   'default Playground Fusion Set; otherwise the Fusion Set is used to build')
 
     add_common_args(parser)
 
@@ -87,6 +101,8 @@ def validate_args(args):
     fusion_set_id = args.fusion_set_id
     platform = Platform.UNKNOWN
     init_common_args(args)
+    if args.pwa:
+        return _validate_pwa_args(args)
     if args.app:
         app_path_ext = splitext(args.app)[-1].lower()
         if app_path_ext == ".ipa":
@@ -113,6 +129,40 @@ def validate_args(args):
         except argparse.ArgumentTypeError as e:
             log_and_exit(str(e))
 
+    _validate_signing_args(args, platform)
+    return platform, fusion_set_id
+
+
+def _validate_pwa_args(args):
+    used_build_args = [f'--{name}' for name in PWA_UNSUPPORTED_BUILD_ARGS if getattr(args, name, None)]
+    if used_build_args:
+        log_and_exit(f"{', '.join(used_build_args)} cannot be used with --pwa")
+    args.pwa_config = _pwa_config_with_build_options(init_pwa_config(args.pwa), args.build_overrides,
+                                                     args.diagnostic_logs)
+    platform = PWA_PLATFORMS[args.pwa_config['pwa_platform']]
+    _validate_signing_args(args, platform)
+    add_pwa_provisioning_profiles(args.pwa_config, ios_provisioning_profiles(args))
+    fusion_set_id = args.fusion_set_id
+    if fusion_set_id:
+        try:
+            fusion_set_id = uuid_arg(fusion_set_id)
+        except argparse.ArgumentTypeError as e:
+            log_and_exit(str(e))
+    return platform, fusion_set_id
+
+
+def _pwa_config_with_build_options(pwa_config, build_overrides=None, use_diagnostic_logs=False):
+    """Merges --build_overrides and --diagnostic_logs into the PWA request overrides, like build.py does."""
+    overrides = pwa_overrides(pwa_config)
+    overrides.update(init_overrides(build_overrides))
+    if use_diagnostic_logs:
+        overrides['extended_logs'] = True
+    if overrides:
+        pwa_config['overrides'] = overrides
+    return pwa_config
+
+
+def _validate_signing_args(args, platform):
     if args.private_signing or args.auto_dev_private_signing:
         if platform == Platform.ANDROID and not args.signing_fingerprint and not args.signing_fingerprint_list:
             log_and_exit(f"Either signing_fingerprint or signing_fingerprint_list must be specified when using any Android local signing")
@@ -143,7 +193,6 @@ def validate_args(args):
     validate_output_path(args.output)
     validate_output_path(args.certificate_output)
     validate_output_path(args.certificate_json)
-    return platform, fusion_set_id
 
 
 def _upload(api_key, team_id, app_path, direct_upload_param=False, skip_upload_checksum_call=False):
@@ -174,6 +223,39 @@ def _build(api_key, team_id, app_id, fusion_set_id, build_overrides, use_diagnos
                              workflow_output_logs_path=workflow_output_logs)
     logging.info(f"Build request finished.")
     return task_id
+
+
+def _pwa_upload_and_build(args, platform, fusion_set_id):
+    """
+    Uploads the PWA and returns the Build ID.
+    Short Flow accounts: the upload is built automatically (default Playground Fusion Set) and --fusion_set_id is
+    ignored. Otherwise the App ID is built with --fusion_set_id (or APPDOME_ANDROID_FS_ID / APPDOME_IOS_FS_ID).
+    """
+    uploads = pwa_build(args.api_key, args.team_id, args.pwa_config, wait=True,
+                        workflow_output_logs=args.workflow_output_logs)
+    if len(uploads) != 1:
+        log_and_exit(f"Expected a single PWA upload, got {len(uploads)}: {uploads}")
+    app_id, task_id = uploads[0]['app_id'], uploads[0][TASK_ID_KEY]
+    if task_id:
+        if fusion_set_id:
+            logging.warning(f"--fusion_set_id {fusion_set_id} was not used: Short Flow built the app automatically "
+                            f"with the default Playground Fusion Set")
+        logging.info(f"PWA upload and build finished.")
+        return task_id
+
+    if not fusion_set_id:
+        fusion_set_id = getenv('APPDOME_IOS_FS_ID' if platform == Platform.IOS else 'APPDOME_ANDROID_FS_ID')
+    if not fusion_set_id:
+        log_and_exit(f"PWA uploaded (App ID: {app_id}) but not built: this account has no automatic Short Flow build. "
+                     f"Pass --fusion_set_id (or set the platform Fusion Set environment variable), or build it with "
+                     f"--app_id {app_id} --fusion_set_id <id>")
+    try:
+        fusion_set_id = uuid_arg(fusion_set_id)
+    except argparse.ArgumentTypeError as e:
+        log_and_exit(str(e))
+    logging.info(f"Building PWA App ID {app_id} with Fusion Set {fusion_set_id}")
+    return _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
+                  None, args.workflow_output_logs)
 
 
 def _context(api_key, team_id, task_id, workflow_output_logs=None, new_bundle_id=None, new_version=None,
@@ -232,11 +314,15 @@ def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
 
-    app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload,
-                     args.skip_upload_checksum_call) if args.app else args.app_id
+    if args.pwa:
+        task_id = _pwa_upload_and_build(args, platform, fusion_set_id)
+    else:
+        app_id = _upload(args.api_key, args.team_id, args.app, args.direct_upload,
+                         args.skip_upload_checksum_call) if args.app else args.app_id
 
-    task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides, args.diagnostic_logs,
-                     args.build_to_test_vendor, args.workflow_output_logs, args.cert_pinning_zip, args)
+        task_id = _build(args.api_key, args.team_id, app_id, fusion_set_id, args.build_overrides,
+                         args.diagnostic_logs, args.build_to_test_vendor, args.workflow_output_logs,
+                         args.cert_pinning_zip, args)
 
     _context(args.api_key, args.team_id, task_id, args.workflow_output_logs, args.new_bundle_id, args.new_version,
              args.new_build_num, args.new_display_name, args.app_icon, args.icon_overlay)
