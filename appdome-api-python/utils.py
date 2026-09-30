@@ -358,6 +358,7 @@ def add_upload_args(parser, include_app_id=False, sdk=False):
         add_app_id_arg(target, help=app_id_help)
     parser.add_argument('--skip_upload_checksum_call', action='store_true',
                         help='Skip check-by-checksum API call before upload')
+    return target
 
 
 def add_app_id_arg(parser, required=False, help='App ID on Appdome'):
