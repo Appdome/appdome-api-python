@@ -51,23 +51,12 @@ and adjusting the required signing parameters.
 
 ## PWA whole process
 
-Use `--pwa` with a PWA config file instead of `--app`. The platform comes from `pwa_platform` in the config file
-(`aab` or `ipa`), so use the matching Android or iOS signing parameters.
-- Short Flow accounts: the PWA upload also builds the app with the default Playground Fusion Set, and
-  `--fusion_set_id` is ignored.
-- Other accounts: the upload only creates the app, which is then built with `--fusion_set_id` (or the
-  `APPDOME_ANDROID_FS_ID` / `APPDOME_IOS_FS_ID` environment variable).
-- iOS: `--provisioning_profiles` is required; the profiles are also sent with the PWA upload.
-
-Context, signing and download then run as usual. `--diagnostic_logs` and `--build_overrides` are merged into the
-config file's `overrides` and also used for the build. Options that only apply to uploading an app file
-(`--direct_upload`, `--build_to_test_vendor`, baseline/startup profiles, certificate pinning) cannot be combined
-with `--pwa`.
-See [PWA Upload](#pwa-upload) for the config file format.
+Use `--pwa` with a PWA config file instead of `--app`. Match signing parameters to `pwa_platform` (`aab` or `ipa`).
+For iOS, `--provisioning_profiles` is required. See [PWA Upload](#pwa-upload) for the config format.
 
 ```
 python3 appdome_api.py --pwa <pwa config json file>
---fusion_set_id <fusion set id (accounts without Short Flow)>
+--fusion_set_id <fusion set id>
 --sign_on_appdome
 --keystore <keystore file>
 --keystore_pass <keystore password>
@@ -112,21 +101,15 @@ python3 upload.py --app <apk/aab/ipa file>
 ```
 
 ## PWA Upload
-Creates a Secure PWA app from a website address ([Build a PWA](https://apis.appdome.com/reference/post_pwappload)).
-The response's app object (`"status": "active"`) means the upload is done and gives the App ID.
-With the Short Flow license the upload also starts a build with the default Playground Fusion Set and returns its
-Build ID, which can be used with `context.py`, `sign.py`, `status.py` and `download.py`. Without Short Flow, build the
-App ID with `build.py` or `appdome_api.py --app_id ... --fusion_set_id ...`.
-For iOS (`ipa`), pass the provisioning profiles; they are sent base64 encoded in `overrides.provisioning_profile`.
+
+[Build a PWA](https://apis.appdome.com/reference/post_pwappload). For iOS, pass `--provisioning_profiles`.
 
 ```
 python3 pwa_upload.py --pwa_config <pwa config json file>
 --provisioning_profiles <iOS provisioning profile files (ipa only)>
---wait
---output <output unsigned aab/ipa file>
 ```
 
-`--wait` and `--output` apply to the Short Flow build; `--output` implies `--wait`. The PWA config file replaces inline parameters:
+Config file format:
 
 ```json
 {
@@ -137,9 +120,7 @@ python3 pwa_upload.py --pwa_config <pwa config json file>
 }
 ```
 
-- `pwa_address` and `pwa_platform` are required. Unknown keys are rejected.
-- `pwa_platform` is the output package type, one platform per build: `aab` for Android or `ipa` for iOS.
-- `overrides` is optional and sent to the API as a JSON object (e.g. `{"extended_logs": true}` for Diagnostic Logs).
+`pwa_address` and `pwa_platform` (`aab` or `ipa`) are required. `overrides` is optional.
 
 ## Status
 All of the actions from this point are asynchronous. You can check the status of the action with the following command:

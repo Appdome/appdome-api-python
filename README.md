@@ -117,31 +117,21 @@ python3 appdome_api_sdk.py \
 
 #### PWA Example:
 
-Creates and protects a Secure PWA from a website address. Pass `--pwa` with a PWA config file instead of `--app`.
-`pwa_platform` in the config file is `aab` or `ipa`; use the matching Android or iOS signing parameters.
-- Accounts with the Short Flow license: the PWA upload also builds the app with the default Playground Fusion Set
-  (named after the app). `--fusion_set_id` is ignored.
-- Other accounts: the upload only creates the app, and it is then built with `--fusion_set_id`
-  (or `APPDOME_ANDROID_FS_ID` / `APPDOME_IOS_FS_ID`).
-- iOS (`ipa`): `--provisioning_profiles` is required. The profiles are also sent with the PWA upload.
-
-Context, signing and download then run as in the Android/iOS flow. `--diagnostic_logs` and `--build_overrides`
-work as usual. See the [detailed usage examples](./appdome-api-python/README.md#pwa-upload) for the config file format.
+Pass `--pwa` with a PWA config JSON instead of `--app`. Use Android or iOS signing parameters to match `pwa_platform` (`aab` or `ipa`). See [detailed usage](./appdome-api-python/README.md#pwa-upload) for the config format.
 
 ```python
 python3 appdome_api.py \
 --api_key <api key> \
 --team_id <team-id> \
 --pwa <pwa config json file> \
---fusion_set_id <fusion-set-id (accounts without Short Flow)> \
+--fusion_set_id <fusion-set-id> \
 --sign_on_appdome \
 --keystore <keystore file> \
 --keystore_pass <keystore password> \
 --keystore_alias <key alias> \
 --key_pass <key password> \
 --output <output aab> \
---certificate_output <output certificate pdf> \
---sign_overrides <json_file_path>
+--certificate_output <output certificate pdf>
 ```
 
 ## Signing Fingerprint List (Android only)
