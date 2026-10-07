@@ -7,6 +7,7 @@ import requests
 from utils import (TASKS_URL, request_headers, JSON_CONTENT_TYPE, validate_response,
                    log_and_exit, add_common_args, init_common_args, build_url, team_params)
 
+WAIT_TIMEOUT_SEC = 3600
 
 def status(api_key, team_id, task_id, url, last_date=None, messages=None):
     url = build_url(url, task_id, 'status')
@@ -22,7 +23,7 @@ def status(api_key, team_id, task_id, url, last_date=None, messages=None):
     return requests.get(request_url, headers=headers, params=params)
 
 
-def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_sec=10, timeout_sec=3600,
+def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_sec=10, timeout_sec=WAIT_TIMEOUT_SEC,
                              num_of_retries=3, operation=None, workflow_output_logs_path=None):
     accumulated_sleep = 0
     status_value = 'not initialized'

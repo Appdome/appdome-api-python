@@ -24,6 +24,7 @@ from utils import (validate_response, log_and_exit, add_build_overrides_arg, add
                    ios_p12, ios_p12_password, ios_provisioning_profiles, validate_trusted_fingerprint_list_args,
                    uuid_arg)
 from status import _get_obfuscation_map_status
+from appdome_test import download_appdome_test_results, start_appdome_test
 from upload_mapping_file import upload_mapping_file
 
 
@@ -92,6 +93,11 @@ def parse_arguments():
                         help='Output file for Certified Secure json')
     parser.add_argument('-bt', '--build_to_test_vendor', metavar='build_to_test_vendor',
                         help='Enter vendor name on which Build to Test will happen')
+    parser.add_argument('--appdome_test', nargs='*', default=None, metavar='wait | atr appdome_test_results_json',
+                        help='Run Appdome Test (Standard Launch Tests) on the signed build. '
+                             'No extra args: start and print the Appdome Test task ID. '
+                             'wait: poll until complete. '
+                             'atr appdome_test_results_json: download Appdome Test Results JSON (implies wait).')
     parser.add_argument('-wol', '--workflow_output_logs', metavar='workflow_output_logs',
                         help='Enter path to a workflow output logs file (optional)')
     return parser.parse_args()
@@ -184,6 +190,15 @@ def _validate_signing_args(args, platform):
             args.build_to_test_vendor == vendor.value for vendor in BuildToTestVendors):
         log_and_exit(f"Vendor name provided for Build To Test isn't one of the acceptable vendors")
 
+    if args.appdome_test is not None:
+        if args.appdome_test not in ([], ['wait']) and not (
+                len(args.appdome_test) == 2 and args.appdome_test[0] == 'atr'):
+            log_and_exit("--appdome_test accepts no extra args, wait, or atr <appdome_test_results_json>")
+
+    if args.appdome_test is not None and args.build_to_test_vendor:
+        log_and_exit("Apps built via the Build-to-Test flow are not eligible — "
+                     "only regular fuse/build (then sign) apps can run Appdome Test.")
+
     validate_trusted_fingerprint_list_args(args)
 
     if args.google_play_signing:
@@ -193,6 +208,8 @@ def _validate_signing_args(args, platform):
     validate_output_path(args.output)
     validate_output_path(args.certificate_output)
     validate_output_path(args.certificate_json)
+    if args.appdome_test and args.appdome_test[0] == 'atr':
+        validate_output_path(args.appdome_test[1])
 
 
 def _upload(api_key, team_id, app_path, direct_upload_param=False, skip_upload_checksum_call=False):
@@ -310,6 +327,18 @@ def _download_file(api_key, team_id, task_id, output_path, download_func):
     logging.info(f"File written to {output_path}")
 
 
+def _appdome_test(api_key, team_id, parent_task_id, wait=False, results_path=None):
+    response = start_appdome_test(api_key, team_id, parent_task_id)
+    validate_response(response)
+    test_task_id = response.json()[TASK_ID_KEY]
+    logging.info(f"Appdome Test started: Task ID: {test_task_id}")
+    if wait or results_path:
+        wait_for_status_complete(api_key, team_id, test_task_id, operation='appdome_test')
+        logging.info("Appdome Test completed")
+    if results_path:
+        download_appdome_test_results(api_key, team_id, test_task_id, results_path)
+
+
 def main():
     args = parse_arguments()
     platform, fusion_set_id = validate_args(args)
@@ -344,6 +373,11 @@ def main():
         _download_file(args.api_key, args.team_id, task_id, args.certificate_json, download_certified_secure_json)
         format_json_file(args.certificate_json)
 
+    if args.appdome_test is not None:
+        results_path = args.appdome_test[1] if args.appdome_test and args.appdome_test[0] == 'atr' else None
+        _appdome_test(args.api_key, args.team_id, task_id,
+                      wait=args.appdome_test == ['wait'] or bool(results_path),
+                      results_path=results_path)
 
 if __name__ == '__main__':
     main()

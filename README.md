@@ -196,3 +196,38 @@ Gather all certificate files and pinning.json into a single certs_bundle.zip.
 Invoke your build with:
 
 your-build-command --cert_pinning_zip=/path/to/certs_bundle.zip
+
+## Appdome Test (Standard Launch Tests)
+
+Runs Appdome's Standard Launch Tests on a previously built and signed app. Apps built via the Build-to-Test flow are not eligible — only regular fuse/build (then sign) apps can run Appdome Test.
+
+In the full `appdome_api.py` flow, after sign and artifact download:
+
+```
+python3 appdome_api_python/appdome_api.py ... --appdome_test
+python3 appdome_api_python/appdome_api.py ... --appdome_test wait
+python3 appdome_api_python/appdome_api.py ... --appdome_test atr <appdome_test_results_json>
+```
+
+`--appdome_test` with no extra args starts the test and prints the task ID. `wait` polls until complete. `atr appdome_test_results_json` downloads Appdome Test Results JSON (implies wait). Cannot be combined with `--build_to_test_vendor`.
+
+Standalone `appdome_test.py` uses `--task_id` as a signed fuse/build ID or an Appdome Test task ID. `--wait` polls until complete when starting a new test or when `--task_id` is already running.
+
+If `--task_id` is already running:
+```
+python3 appdome_api_python/appdome_test.py --task_id <task id>
+python3 appdome_api_python/appdome_test.py --task_id <task id> --wait
+python3 appdome_api_python/appdome_test.py --task_id <task id> --appdome_test_results <appdome_test_results_json>
+```
+
+If `--task_id` is a completed Appdome Test, download results:
+```
+python3 appdome_api_python/appdome_test.py --task_id <appdome test task id> --appdome_test_results <appdome_test_results_json>
+```
+
+If `--task_id` is a signed build (start a new test):
+```
+python3 appdome_api_python/appdome_test.py --task_id <build id value>
+python3 appdome_api_python/appdome_test.py --task_id <build id value> --wait
+python3 appdome_api_python/appdome_test.py --task_id <build id value> --appdome_test_results <appdome_test_results_json>
+```
