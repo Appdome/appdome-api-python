@@ -231,3 +231,67 @@ python3 appdome_api_python/appdome_test.py --task_id <build id value>
 python3 appdome_api_python/appdome_test.py --task_id <build id value> --wait
 python3 appdome_api_python/appdome_test.py --task_id <build id value> --appdome_test_results <appdome_test_results_json>
 ```
+
+## Error handling
+
+API failures raise `AppdomeApiError` (from `utils`) and exit non-zero when run as a CLI. The exception string (and logged message) follows:
+
+```text
+Appdome API error: HTTP <status> — <api_message>
+```
+
+Attributes for programmatic use:
+
+| Attribute | Meaning |
+| --- | --- |
+| `status_code` | HTTP status (e.g. `403`), or `None` for local/task failures without an HTTP code |
+| `message` | Parsed API message (Boom `message` when present) |
+| `response_body` | Raw response body |
+
+`<api_message>` is extracted in this order: JSON `message` → `output.payload.message` → `error` (+ `statusCode`) → truncated raw body. Default errors do not dump the API key; `--verbose` logs request metadata with Authorization redacted.
+
+### Example: create-task rejected before a Build ID exists
+
+Some validation failures (for example an expired Certificate Pinning cert) return HTTP 403 on the fuse/create-task call and never create a Build ID. Poll task status only after create-task returns `task_id`.
+
+Typical Boom body from the API:
+
+```json
+{
+  "statusCode": 403,
+  "error": "Forbidden",
+  "message": "The certificate file - api.example.com has expired. Please supply an updated certificate to protect your app"
+}
+```
+
+What the client surfaces:
+
+```text
+Appdome API error: HTTP 403 — The certificate file - api.example.com has expired. Please supply an updated certificate to protect your app
+```
+
+### Consuming errors in code
+
+```python
+from utils import AppdomeApiError
+from build import build
+from utils import validate_response
+
+try:
+    response = build(api_key, team_id, app_id, fusion_set_id, overrides=overrides, files=files)
+    validate_response(response)
+except AppdomeApiError as e:
+    if e.status_code == 403 and 'expired' in e.message.lower():
+        # e.g. refresh pinning certs / update cert_pinning_zip, then retry
+        raise
+    raise
+```
+
+### Consuming errors in CI
+
+```bash
+if ! python3 appdome_api_python/appdome_api.py ... ; then
+  # stderr / exception text contains the Appdome API error line
+  ...
+fi
+```

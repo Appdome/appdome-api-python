@@ -6,8 +6,8 @@ import requests
 from certified_secure_json import format_json_file
 from status import WAIT_TIMEOUT_SEC, status, wait_for_status_complete
 from utils import (ACTION_KEY, TASKS_URL, TASK_ID_KEY, add_common_args, debug_log_request, empty_files,
-                   init_common_args, log_and_exit, request_headers, task_output_command, team_params,
-                   validate_output_path, validate_response)
+                   init_common_args, request_headers, task_output_command, team_params,
+                   validate_output_path, validate_response, extract_api_error_message, raise_api_error)
 
 
 def start_appdome_test(api_key, team_id, parent_task_id):
@@ -62,9 +62,8 @@ def main():
     current_status = status_response.json().get('status', '')
 
     if current_status == 'error':
-        status_json = status_response.json()
-        message = status_json.get('message') or status_json or status_response.text
-        log_and_exit(f"Task not completed successfully. Response: {message}")
+        message = extract_api_error_message(status_response.json())
+        raise_api_error(f'Task not completed successfully: {message}', response_body=status_response.text)
 
     if current_status == 'progress':
         logging.info("Appdome Test is already running.")

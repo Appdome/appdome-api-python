@@ -5,7 +5,8 @@ from time import sleep
 import requests
 
 from utils import (TASKS_URL, request_headers, JSON_CONTENT_TYPE, validate_response,
-                   log_and_exit, add_common_args, init_common_args, build_url, team_params)
+                   log_and_exit, add_common_args, init_common_args, build_url, team_params,
+                   AppdomeApiError, extract_api_error_message, raise_api_error)
 
 WAIT_TIMEOUT_SEC = 3600
 
@@ -52,12 +53,14 @@ def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_
                 # Validate HTTP status code is 200 or 204
                 if status_response.status_code in [200, 204]:
                     break  # Exit retry loop on success
-                else:
-                    # Continue retrying if status code is not valid
-                    sleep(interval_sec)
+                if status_response.status_code in (401, 403):
+                    validate_response(status_response)
+                sleep(interval_sec)
+            except AppdomeApiError:
+                raise
             except Exception as e:
                 if i == num_of_retries - 1:
-                    raise Exception(f'Wait for status Error. Error: {e}')
+                    raise_api_error(f'Wait for status Error. Error: {e}')
                 sleep(interval_sec)
 
         validate_response(status_response)
@@ -94,12 +97,8 @@ def wait_for_status_complete(api_key, team_id, task_id, url=TASKS_URL, interval_
         log_and_exit(f"\nTask did not complete in the specified timeout of: {timeout_sec} seconds")
 
     if status_value != 'completed':
-        message = (
-            status_response_json.get('message')
-            or status_response_json
-            or status_response.text
-        )
-        log_and_exit(f"Task not completed successfully. Response: {message}")
+        message = extract_api_error_message(status_response_json) if status_response_json else extract_api_error_message(status_response.text)
+        raise_api_error(f'Task not completed successfully: {message}', response_body=status_response.text)
 
 
 def _get_obfuscation_map_status(api_key, team_id, task_id):

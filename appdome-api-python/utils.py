@@ -251,17 +251,72 @@ def task_output_command(api_key, team_id, task_id, command, action=None):
     return requests.get(url, headers=headers, params=params)
 
 
+class AppdomeApiError(Exception):
+    """Raised when an Appdome API call fails. Prefer catching this over bare Exception."""
+
+    def __init__(self, message, status_code=None, response_body=''):
+        self.status_code = status_code
+        self.message = message
+        self.response_body = response_body if response_body is not None else ''
+        if status_code is not None:
+            super().__init__(f'Appdome API error: HTTP {status_code} — {message}')
+        else:
+            super().__init__(f'Appdome API error: {message}')
+
+
+def extract_api_error_message(body, status_code=None):
+    """Extract a human-readable message from an API error body (JSON Boom or plain text)."""
+    if body is None:
+        return 'Empty response'
+    if isinstance(body, dict):
+        data = body
+    else:
+        text = body if isinstance(body, str) else str(body)
+        if not text.strip():
+            return 'Empty response'
+        try:
+            data = json.loads(text)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return value_to_print(text)
+
+    if not isinstance(data, dict):
+        return value_to_print(data)
+
+    message = data.get('message')
+    if message:
+        return str(message)
+
+    payload = data.get('output')
+    if isinstance(payload, dict):
+        payload = payload.get('payload')
+        if isinstance(payload, dict) and payload.get('message'):
+            return str(payload['message'])
+
+    error = data.get('error')
+    if error:
+        code = data.get('statusCode', status_code)
+        if code is not None:
+            return f'{error} (statusCode={code})'
+        return str(error)
+
+    return value_to_print(json.dumps(data) if data else 'Empty response')
+
+
 def validate_response(response):
     accepted_response_codes = [200, 204]
     if response.status_code not in accepted_response_codes:
-        headers_to_print = {}
-        for key, value in response.request.headers.items():
-            headers_to_print[key] = value_to_print(value)
-        body_to_print = value_to_print(response.request.body)
-
-        log_and_exit(
-            f'Validation status for request {response.request.url} with headers {headers_to_print} and body {body_to_print} failed.'
-            f' Status Code: {response.status_code}. Response: {response.text}')
+        if logging.getLogger().isEnabledFor(logging.DEBUG) and response.request is not None:
+            headers_to_print = {}
+            for key, value in response.request.headers.items():
+                if key.lower() == 'authorization':
+                    headers_to_print[key] = '[REDACTED]'
+                else:
+                    headers_to_print[key] = value_to_print(value)
+            logging.debug(
+                f'Request failed: {response.request.url} headers={headers_to_print} '
+                f'body={value_to_print(response.request.body)}')
+        message = extract_api_error_message(response.text, response.status_code)
+        raise_api_error(message, response.status_code, response.text)
 
 
 def value_to_print(value):
@@ -269,9 +324,13 @@ def value_to_print(value):
     return value if len(str(value)) < max_str_len else str(value)[:max_str_len] + " ... '"
 
 
-def log_and_exit(log_line):
+def raise_api_error(message, status_code=None, response_body=''):
     sys.tracebacklimit = 0
-    raise Exception(log_line)
+    raise AppdomeApiError(message, status_code, response_body)
+
+
+def log_and_exit(log_line):
+    raise_api_error(log_line)
 
 
 def validate_required_params(params):
@@ -290,7 +349,13 @@ def init_logging(verbose=False):
 
 def debug_log_request(url, headers=None, data=None, params=None, files=None, request_type='post'):
     params_line = f" with params: {params}." if params else ""
-    headers_line = f" with headers: {headers}." if headers else ""
+    if headers:
+        headers_for_log = dict(headers)
+        if 'Authorization' in headers_for_log:
+            headers_for_log['Authorization'] = '[REDACTED]'
+        headers_line = f" with headers: {headers_for_log}."
+    else:
+        headers_line = ""
     data_line = f" with data: {data}." if data else ""
     files_line = f" with file: {files}." if files else ""
     logging.debug(f"About to {request_type} {url}{params_line}{headers_line}{data_line}{files_line}")
